@@ -1,95 +1,112 @@
 #!/usr/bin/Rscript
 
 ## Author: cainu5
-## Generates logos and analysis of NRLB results
-## 09/08/20
+##
+## Filters out weak motifs
+## Edges motifs so core motif remains
+## Defines spacers
+## Creates confidence score for motif
+## Exports scores, logos of original and trimmed motifs, PWMS and list of 
+## motif exports for DiffLogo clustering
+## TODO - cluster motifs with DiffLogo so only unique motifs are kept
+## TOTO - define number and length of spacers and add to output
+##
+## 09/18/20
 
 
 ## Load libraries
 library("ggseqlogo", lib.loc="/users/cainu5/Rpackages")
 library("NRLBtools", lib.loc="/users/cainu5/Rpackages")
 
-
+## Create an error traceback
 options(error=traceback)
 
 ## Bring in arguments
 args = commandArgs(trailingOnly=TRUE)
 TF = args[1]
 
-## Read output file
+## Determine csv file name
 Filename = paste(TF,"-","NRLBConfig.csv",sep="")
 
 ## Load models
 Models = load.models(fileName = Filename)
-
-
 Indices = length(Models$Values)-1
-print(paste("Indices: ",Indices))
+
+## Define thresholds
 prop = 30 # threshold for spacers/edging
 thres_whole = 1 # threshold for entire motif
-summary_file = paste(TF,"_summary_results.txt",sep = "")
-file.create(summary_file)
-expo = c("Motif", "Score", "nt_left", "nt_right")
-write.table(t(expo), sep = "\t", summary_file, append = TRUE, row.names = FALSE, col.names = FALSE)
 
-## Create logo files for each motif
+## Create summary file - append is not true, so fresh file is created
+summary_file = paste(TF,"_summary_results.txt",sep = "")
+expo = c("Motif", "Score", "nt_left", "nt_right")
+write.table(t(expo), sep = "\t", summary_file, row.names = FALSE, 
+	col.names = FALSE, quote = FALSE )
+	
+## Create error log for filtered motifs
+error_file = paste(TF,"_error.txt", sep = "")
+expo_err = c("Motif", "Reason")
+write.table(t(expo_err), sep = "\t", error_file, row.names = FALSE,
+	col.names = FALSE, quote = FALSE )
+
 for ( i in 1:Indices )
 	{
-	# ## create logo of original motif
-	# LogoName = paste(TF,"_original",i,".png",sep="")
-	# print(paste("Index number:  ",i))
-	# png(filename = LogoName)
-	# p = logo(model = Models, index = i)
-	# print(p)
-	# dev.off()
+	
+	## create logo of original motif - only to check edging
+	LogoName = paste(TF,"_original",i,".png",sep="")
+	png(filename = LogoName)
+	p = logo(model = Models, index = i)
+	print(p)
+	dev.off()
 
 	## Extract motif information
 	fit.output = Models$Values[[i]]
 
-	## this follows motif analysis in logo.R from NRLB package
-	
-	
 	print(paste("Index number:  ",i))
 	
-	
-	## format motif
+	## format motif - like NRLB logo script
 	motif = exp(as.numeric(fit.output$NB))
 	k = length(motif)/4
 	dim(motif) = c(4, k)
 	motif = log(motif)
 	rownames(motif) = c("A","C","G","T")
 	
-	
-	## format error
+	## format error - like NRLB logo script
 	error = exp(as.numeric(fit.output$NE))
 	dim(error) = c(4, k)
 	error = log(error)
 	rownames(error) = c("A","C","G","T")
 	
-	
-	# print(paste("kmer length: ",k))
+	## set variable for if need to break out of two loops
 	next_req = FALSE
 	
-	## centralize energy motif
+	## centralize energy motif around x-axis
 	motif = apply(motif, 2, function(column) column-mean(column))
 
-	## determine the sum of the motif (strength of binding or antibinding)
+	## find sum of each column of absolute value of matrix - strength of binding
+	## and antibinding
 	motif_abs = abs(motif)
-	
 	totals = apply(motif_abs, 2, function(column) sum(column))
 	thres = max(totals)*prop/100
-	
 
 	## filter out bad motifs
-	print(paste("Mean totals: ",mean(totals)))
-	if ( mean(totals) < thres_whole || k < 3 )
+	if ( mean(totals) < thres_whole )
 		{ 
-		print("Motif did not pass the total score threshold or length")
+		err = paste("Motif did not pass the total score of ", thres_whole)
+		expo_err = c(i, err)
+		write.table(t(expo_err), sep = "\t", error_file, append = TRUE, 
+			row.names = FALSE, col.names = FALSE)
 		next 
 		}
+		
+	if ( k < 3 )
+		{
+		expo_err = c(i,"Motif is less than 3 nucleotides")
+		write.table(t(expo_err), sep = "\t", error_file, append = TRUE, 
+			row.names = FALSE, col.names = FALSE)
+		next
+		}
 
-
-	## edge beginning
+	## edge left
 	count = 0
 	while ( totals[1] < thres )
 		{
@@ -98,23 +115,29 @@ for ( i in 1:Indices )
 		# remove first kmer
 		motif = motif[,2:k]
 		error = error[,2:k]
-		# recalculate averages vector
-		motif_abs = abs(motif)
 		
+		# recalculate averages vector
+		motif_abs = abs(motif)	
 		totals = apply(motif_abs, 2, function(column) sum(column))
 	
 		# calculate new kmer length	
 		k = dim(motif)[2]
 		if ( k <= 3 )
 			{
-			print("Motif too small after trimming")
+			expo_err = c(i,"Motif too small after trimming")
+			write.table(t(expo_err), sep = "\t", error_file, append = TRUE, 
+				row.names = FALSE, col.names = FALSE)
 			next_req = TRUE
 			break
 			}
-
 		}
-	L.del = count
 
+	## need to break out of two loops
+	if ( next_req == TRUE )
+		{next}
+
+	L.del = count
+	
 	## edge end
 	k = length(motif)/4
 	count = 0
@@ -136,26 +159,21 @@ for ( i in 1:Indices )
 		k = dim(motif)[2]
 		if ( k <= 3 )
 			{
-			print("Motif too small after trimming")
+			expo_err = c(i,"Motif too small after trimming")
+			write.table(t(expo_err), sep = "\t", error_file, append = TRUE, 
+				row.names = FALSE, col.names = FALSE)
 			next_req = TRUE
 			break
 			}
-
 		}
 	
 	## need to break out of two loops
 	if ( next_req == TRUE )
 		{next}
-		
 	R.del = count
 	
-	
-	
-	## spacers? - start at center and test outward for a spacer
-	
-	Spacer = rep("n",k)
-	
 	## set variables for start of the loop
+	Spacer = rep("n",k)
 	count = 0
 	FOR = TRUE
 	REV = TRUE
@@ -197,34 +215,37 @@ for ( i in 1:Indices )
 			}
 		}	
 
-	
-	# create logo of trimmed motif
+	## create logo of trimmed motif
 	LogoName = paste(TF,"_trimmed",i,".png",sep="")
 	png(filename = LogoName)
 	p = logo(model = Models, index = i, l.del = L.del, r.del = R.del )
 	print(p)
 	dev.off()
 	
-	print(error)
-	print(motif)
+	## export motif to text file for diffLogo clustering
+	motif_name = paste(TF, "_motif_",i,".txt",sep = "")
+	write.table(motif, sep = "\t", motif_name, col.names = FALSE, 
+		row.names = FALSE)
+	
+	## export motif name to motif list for diffLogo readout
+	motif_list = paste(TF,"_motif_list.txt")
+	write.table(motif_name, sep = "\n", motif_list, 
+		row.names = FALSE, col.names = FALSE, append = TRUE, quote = FALSE)
 	
 	error_percent = abs(error/motif)*100 
 	
+	## label columns as spacer or not spacer
 	colnames(error_percent) = Spacer
 	
-	# find score; this is like golf currently
+	## find score of non-spacers; this is like golf currently
 	score = mean(error_percent[,"n"])
-	print(score)
-	
-	# write to a file
-	output_summ = file(summary_file)
-	
-	## EVENTUALLY ADD NUMBER AND LENGTH OF SPACER
 	
 	## create dataframe with export information
-	expo = c(i, round(score,0), L.del, R.del)
-	write.table(t(expo), sep = "\t", summary_file, append = TRUE, row.names = FALSE, col.names = FALSE)
-		
+	
+	expo = c(i, round(score,0), L.del, R.del, any(Spacer == "y"))
+	write.table(t(expo), sep = "\t", summary_file, append = TRUE, 
+		row.names = FALSE, col.names = FALSE)
+
 	}
 
 	
