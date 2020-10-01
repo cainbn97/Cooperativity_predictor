@@ -9,7 +9,7 @@
 ## Exports scores, logos of original and trimmed motifs, PWMS and list of 
 ## motif exports for DiffLogo clustering
 ## TODO - cluster motifs with DiffLogo so only unique motifs are kept
-## TOTO - define number and length of spacers and add to output
+## TODO - define number and length of spacers and add to output
 ##
 ## 09/18/20
 
@@ -17,6 +17,9 @@
 ## Load libraries
 library("ggseqlogo", lib.loc="/users/cainu5/Rpackages")
 library("NRLBtools", lib.loc="/users/cainu5/Rpackages")
+# library("proxy", lib.loc="/users/cainu5/Rpackages")
+# library("cba", lib.loc="/users/cainu5/Rpackages")
+# library("DiffLogo", lib.loc="/users/cainu5/Rpackages")
 
 ## Create an error traceback
 options(error=traceback)
@@ -38,7 +41,7 @@ thres_whole = 1 # threshold for entire motif
 
 ## Create summary file - append is not true, so fresh file is created
 summary_file = paste(TF,"_summary_results.txt",sep = "")
-expo = c("Motif", "Score", "nt_left", "nt_right")
+expo = c("Motif", "Score", "nt_left", "nt_right","Spacer?")
 write.table(t(expo), sep = "\t", summary_file, row.names = FALSE, 
 	col.names = FALSE, quote = FALSE )
 	
@@ -51,13 +54,6 @@ write.table(t(expo_err), sep = "\t", error_file, row.names = FALSE,
 for ( i in 1:Indices )
 	{
 	
-	## create logo of original motif - only to check edging
-	LogoName = paste(TF,"_original",i,".png",sep="")
-	png(filename = LogoName)
-	p = logo(model = Models, index = i)
-	print(p)
-	dev.off()
-
 	## Extract motif information
 	fit.output = Models$Values[[i]]
 
@@ -91,10 +87,10 @@ for ( i in 1:Indices )
 	## filter out bad motifs
 	if ( mean(totals) < thres_whole )
 		{ 
-		err = paste("Motif did not pass the total score of ", thres_whole)
+		err = paste("Motif has an average column weight of", round(mean(totals),3))
 		expo_err = c(i, err)
 		write.table(t(expo_err), sep = "\t", error_file, append = TRUE, 
-			row.names = FALSE, col.names = FALSE)
+			row.names = FALSE, col.names = FALSE, quote = FALSE)
 		next 
 		}
 		
@@ -102,7 +98,7 @@ for ( i in 1:Indices )
 		{
 		expo_err = c(i,"Motif is less than 3 nucleotides")
 		write.table(t(expo_err), sep = "\t", error_file, append = TRUE, 
-			row.names = FALSE, col.names = FALSE)
+			row.names = FALSE, col.names = FALSE, quote = FALSE)
 		next
 		}
 
@@ -126,7 +122,7 @@ for ( i in 1:Indices )
 			{
 			expo_err = c(i,"Motif too small after trimming")
 			write.table(t(expo_err), sep = "\t", error_file, append = TRUE, 
-				row.names = FALSE, col.names = FALSE)
+				row.names = FALSE, col.names = FALSE, quote = FALSE )
 			next_req = TRUE
 			break
 			}
@@ -161,7 +157,7 @@ for ( i in 1:Indices )
 			{
 			expo_err = c(i,"Motif too small after trimming")
 			write.table(t(expo_err), sep = "\t", error_file, append = TRUE, 
-				row.names = FALSE, col.names = FALSE)
+				row.names = FALSE, col.names = FALSE,quote = FALSE)
 			next_req = TRUE
 			break
 			}
@@ -221,6 +217,7 @@ for ( i in 1:Indices )
 	p = logo(model = Models, index = i, l.del = L.del, r.del = R.del )
 	print(p)
 	dev.off()
+
 	
 	## export motif to text file for diffLogo clustering
 	motif_name = paste(TF, "_motif_",i,".txt",sep = "")
@@ -241,11 +238,25 @@ for ( i in 1:Indices )
 	score = mean(error_percent[,"n"])
 	
 	## create dataframe with export information
-	
 	expo = c(i, round(score,0), L.del, R.del, any(Spacer == "y"))
 	write.table(t(expo), sep = "\t", summary_file, append = TRUE, 
 		row.names = FALSE, col.names = FALSE)
 
 	}
+	
+	
+# ## Prep motifs for clustering
+# motifs = readLines(motif_list)
+# print(motifs)
+# pwm = list()
+# for ( m in length(motifs) )
+	# {
+	# print(m)
+	# print(motifs[m])
+	# pwm[[m]] = getPwmFromPwmFile(motifs[m])
+	# print(pwm[[m]])
+	# }
+
+# # diffLogoTable(motif_list)
 
 	
