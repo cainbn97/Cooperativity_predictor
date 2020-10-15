@@ -14,16 +14,15 @@ module load python3
 
 ## Bring in arguments
 TF=${1:?Expected target file as argument #1}
-Cycle=${2:?Expected target file as argument #2}
-Target_link=${3:?Expected target file as argument #3}
-Zero_link=${4:?Expected target file as argument #4}
+Target_link=${2:?Expected target file as argument #2}
+Zero_link=${3:?Expected target file as argument #4}
 Target=$TF
 
-cd ~/NRLB/testing
+cd ~/SELEX_analysis/testing
 
+#####################################
 ## ACQUIRE FASTQ FROM ENA DATABASE ##
-
-
+#####################################
 
 ## Check if folder already exists
 if [ -d "$TF" ]
@@ -32,132 +31,175 @@ then
 	exit 1
 fi
 
+## Make necessary directories and download files
 mkdir $TF; cd $TF
 mkdir Cycle1; mkdir Cycle2; mkdir Cycle3; mkdir Cycle4
 
-# cd "$TF" || mkdir "$TF" && cd "$TF"
-mkdir "Cycle${Cycle}"; cd "Cycle${Cycle}"
-curl -flOJ "$Target_link"
+## Read sample accession of cycle 1 and extrapolate other cycle accessions
+SampAcc_Cycle1=$( echo "$Target_link" | cut -d / -f 5 | cut -d R -f 3 )
+SampAcc_Cycle2=$(( SampAcc_Cycle1 + 1 ))
+SampAcc_Cycle3=$(( SampAcc_Cycle1 + 2 ))
+SampAcc_Cycle4=$(( SampAcc_Cycle1 + 3 ))
 
-cd ~/NRLB/testing/"$Target"/"Cycle${Cycle}"
-Fastq_target=$( ls *"${Cycle}.fastq.gz" )
-echo $Fastq_target
+## Piece together target links
+LINK1="$Target_link"
+LINK2=$( echo $Target_link |\
+	cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle2}/"$( echo $Target_link |\
+	cut -d / -f 6 | cut -d _ -f 1,2,3 )"_2.fastq.gz"
+LINK3=$( echo $Target_link |\
+	cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle3}/"$( echo $Target_link |\
+	cut -d / -f 6 | cut -d _ -f 1,2,3 )"_3.fastq.gz"
+LINK4=$( echo $Target_link |\
+	cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle4}/"$( echo $Target_link |\
+	cut -d / -f 6 | cut -d _ -f 1,2,3 )"_4.fastq.gz"
 
-# # Check if zero cycle has been previously downloaded
 ZeroTag=$( echo $Zero_link | cut -d '_' -f 2 )
-echo $ZeroTag; cd ~/NRLB/testing
+echo $ZeroTag; cd ~/SELEX_analysis/testing
 if [ -e */"ZeroCycle_${ZeroTag}_0_0.fastq.gz" ]
 then
 	echo "Zero cycle has been downloaded"
 else
-	cd ~/NRLB/testing
+	cd ~/SELEX_analysis/testing
 	mkdir "$ZeroTag"; cd "$ZeroTag"
 	curl -flOJ "$Zero_link"
 fi
 
+cd ~/SELEX_analysis/testing/"$Target"
+cd Cycle1; curl -flOJ "$Target_link"
+cd ../Cycle2; curl -flOJ "$LINK2"
+cd ../Cycle3; curl -flOJ "$LINK3"
+cd ../Cycle4; curl -flOJ "$LINK4"
 
-cd ~/NRLB/testing/"$ZeroTag"
+## Grab downloaded fastq file names in a vector
+Rounds=(1 2 3 4)
+for Cycle in ${Rounds[@]}
+do
+	cd ~/SELEX_analysis/testing/"$Target"/"Cycle${Cycle}"
+	Fastq_target["$Cycle"]=$( ls *"${Cycle}.fastq.gz" )
+	echo "$Cycle" "${Fastq_target[@]}"
+done
+
+cd ~/SELEX_analysis/testing/"$ZeroTag"
 Fastq_bg=$( ls *.fastq.gz )
-echo $Fastq_bg
 
-cd ~/NRLB/testing
 ## check file integrities
-if gzip -t "$TF"/"Cycle${Cycle}"/"${Fastq_target}"
-then
-	echo "Download of TF file was successful"
-else
-	echo "Download of TF file was unsuccessful"
-	exit 1
-fi
+cd ~/SELEX_analysis/testing
+for Cycle in ${Rounds[@]}
+do
+	if gzip -t "$TF"/"Cycle${Cycle}"/"${Fastq_target[$Cycle]}"
+	then
+		echo ""
+	else
+		echo 'Download of ${Fastq_target["$Cycle"]} was unsuccessful'
+		exit 1
+	fi
+done
 
 if gzip -t "$ZeroTag/${Fastq_bg}"
 then
-	echo "Download of Zero tag file was successful"
+	echo ""
 else 
 	echo "Download of Zero tag file was unsuccessful"
 	exit 1
 fi
 
 
-## Convert zipped fastq files to fasta
-cd ~/NRLB/testing/"$ZeroTag"
+# #####################################
+# ########## Homer analysis ###########
+# #####################################
+
+
+## Convert zipped fastq files to fasta for zero cycle
+cd ~/SELEX_analysis/testing/"$ZeroTag"
 zcat "$Fastq_bg" > "${ZeroTag}.fastq"
 paste - - - - < "${ZeroTag}.fastq" | cut -f 1,2 | sed 's/^@/>/' |\
- tr "\t" "\n" > "${ZeroTag}.fa"
+tr "\t" "\n" > "${ZeroTag}.fa"
 rm "${ZeroTag}.fastq"
 
-cd ~/NRLB/testing/"$Target"/"Cycle${Cycle}"
-zcat "$Fastq_target" > "${Target}_${ZeroTag}_${Cycle}.fastq"
-paste - - - - < "${Target}_${ZeroTag}_${Cycle}.fastq" | cut -f 1,2 | sed 's/^@/>/' |\
- tr "\t" "\n" > "${Target}_${ZeroTag}_${Cycle}.fa"
-rm "${Target}_${ZeroTag}_${Cycle}.fastq"
+## Convert zipped fastq files to fasta for cycle 2
+cd ~/SELEX_analysis/testing/"$Target"/"Cycle2"
+zcat "${Fastq_target[2]}" > "${Target}_${ZeroTag}_2.fastq"
+paste - - - - < "${Target}_${ZeroTag}_2.fastq" | cut -f 1,2 |\
+sed 's/^@/>/' |	 tr "\t" "\n" > "${Target}_${ZeroTag}_2.fa"
+rm "${Target}_${ZeroTag}_2.fastq"
 
-# Run homer for short
-findMotifs.pl "${Target}_${ZeroTag}_${Cycle}.fa" fasta "${Target}_${Cycle}_homer_short" \
--fasta ~/NRLB/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
+## De novo motif analysis of cycle 2 short
+echo "Starting de novo motif analysis for Cycle2-short"
+findMotifs.pl "${Target}_${ZeroTag}_2.fa" fasta "${Target}_2_homer_denovo_short" \
+-fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
 -mcheck /data/weirauchlab/databank/appdata/HOMER/customizedTFs/v2.00/human_cisbp200.motif \
 -noredun -len 6,8 -p 3 -noknown
 
-	
-# Calculate and output important info
 python /data/weirauchlab/team/ches2d/MyTools/html2txt/code/html2txt.py  \
-	"${Target}_${Cycle}_homer_short"/homerResults.html \
-	"${Target}_${Cycle}_homer_short"/homerResults.txt 
+	"${Target}_2_homer_denovo_short"/homerResults.html \
+	"${Target}_2_homer_denovo_short"/homerResults.txt 
+
+## Pull out top relevant motif - searches for homeodomain output
+grep -E -n \
+	'ALX3|ALX4|ARX|BARHL2|BARX1|BSX|CART1|CDX1|CDX2|DLX1|DLX2|DLX3|DLX4|DLX5|DLX6|DMBX1|DPRX|DRGX|DUXA|EMX1|EMX2|EN1|EN2|ESX1|EVX1|EVX2|GBX1|GBX2|GSC|GSC2|GSX1|GSX2|HESX1|HMBOX1|HMX1|HMX2|HMX3|HNF1A|HNF1B|HOXA1|HOXA10|HOXA13|HOXA2|HOXB13HOXB2|HOXB3|HOXB5|HOXC10|HOXC11|HOXC12|HOXC13|HOXD11|HOXD12|HOXD13|HOXD8|IRX2|IRX5|ISL2|ISX|LBX2|LHX2|LHX6|LHX9|LMX1A|LMX1B|MEOX1|MEOX2|MIXL1|MNX1|MSX1|MSX2|NKX2-3|NKX2-8|NKX3-1|NKX3-2|NKX6-1|NKX6-2|NOTO|OTX1|OTX2|PDX1|PHOX2A|PHOX2B|PITX1|PITX3|PROP1|PRRX1|PRRX2|RAX|RAXL1|RHOXF1|SHOX|SHOX2|UNCX|VAX1|VAX2|VENTX|VSX1|VSX2' \
+	"${Target}_2_homer_denovo_short"/homerResults.txt | head -1 \
+	> "${Target}_2_homer_denovo_short"/top_short.txt
 	
-grep -E \
-	'ALX3|ALX4|ARX|BARHL2|BARX1|BSX|CART1|CDX1|CDX2|DLX1|DLX2|DLX3|DLX4|DLX5|DLX6|DMBX1|DPRX|DRGX|DUXA|EMX1|EMX2|EN1|EN2|ESX1|EVX1|EVX2|GBX1|GBX2|GSC|GSC2|GSX1|GSX2|HESX1|HMBOX1|HMX1|HMX2|HMX3|HNF1A|HNF1B|HOXA1|HOXA10|HOXA13|HOXA2|HOXB13HOXB2|HOXB3|HOXB5|HOXC10|HOXC11|HOXC12|HOXC13|HOXD11|HOXD12|HOXD13|HOXD8|IRX2|IRX5|ISL2|ISX|LBX2|LHX2|LHX6|LHX9|LMX1A|LMX1B|MEOX1|MEOX2|MIXL1|MNX1|MSX1|MSX2|NKX2-3|NKX2-8|NKX3-1|NKX3-2|NKX6-1|NKX6-2|NOTO|OTX1|OTX2|PDX1|PHOX2A|PHOX2B|PITX1|PITX3|PROP1|PRRX1|PRRX2|RAX|RAXL1|RHOXF1|SHOX|SHOX2|UNCX|VAX1|VAX2|VENTX|VSX1|VSX2' "${Target}_${Cycle}_homer_short"/homerResults.txt | head -1 |\
-	> "${Target}_${Cycle}_homer_short"/top_short.txt ||\
-	printf "%s\t%d\t%d\t%d" "No motif found" "0" "0" "1"  \
-	> "${Target}_${Cycle}_homer_short"/top_short.txt
+## Check if monomer was found
+if [ -s "${Target}_2_homer_denovo_short"/top_short.txt ]
+then
+	echo 'TAAT motif found. Continuing to long de novo motif'
+else
+	echo 'No TAAT motif found. Exiting'
+	exit 1
+fi
 
-head -1 "${Target}_${Cycle}_homer_short"/homerResults.txt \
-> "${Target}_${Cycle}_homer_short"/top_short.txt
-
-Log10pvalue_short=$( cut -f -2 "${Target}_${Cycle}_homer_short"/top_short.txt |\
-	cut -d % -f 1 )
-Per_target_short=$( cut -f 3 "${Target}_${Cycle}_homer_short"/top_short.txt |\
-	cut -d % -f 1)
-Per_bg_short=$( cut -f 4 "${Target}_${Cycle}_homer_short"/top_short.txt |\
-	cut -d % -f 1)
-Fold_change_short=$( echo $Per_target_short $Per_bg_short | awk '{print $1/$2}' )
-echo "%Target of Short Motif: $Per_target_short"
-echo "%Bg of Short Motif: $Per_bg_short"
-echo "Fold change of Short Motif: $Fold_change_short"
-
-## Run homer for long
-findMotifs.pl "${Target}_${ZeroTag}_${Cycle}.fa" fasta "${Target}_${Cycle}_homer_long" \
--fasta ~/NRLB/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
+## De novo motif analysis of cycle 2 long
+echo "Starting de novo motif analysis for Cycle2-long"
+findMotifs.pl "${Target}_${ZeroTag}_2.fa" fasta "${Target}_2_homer_denovo_long" \
+-fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
 -mcheck /data/weirauchlab/databank/appdata/HOMER/customizedTFs/v2.00/human_cisbp200.motif \
 -noredun -len 16,18,20 -p 3 -noknown
+rm "${Target}_${ZeroTag}_2.fa"
 
-python /data/weirauchlab/team/ches2d/MyTools/html2txt/code/html2txt.py  \
-	"${Target}_${Cycle}_homer_long"/homerResults.html \
-	"${Target}_${Cycle}_homer_long"/homerResults.txt 
+## Copy relevant motifs to TF directory
+s_motif_number=$( cut -d : -f 1 "${Target}_2_homer_denovo_short"/top_short.txt )
+cp "${Target}_2_homer_denovo_short/homerResults/motif${s_motif_number}.motif" \
+	~/SELEX_analysis/testing/"$Target"/"motif${s_motif_number}_short.motif"
+cp "${Target}_2_homer_denovo_long/homerResults/motif1.motif" \
+	~/SELEX_analysis/testing/"$Target"/"motif1_long.motif"
+cat ~/SELEX_analysis/testing/"$Target"/"motif${s_motif_number}_short.motif" \
+	~/SELEX_analysis/testing/"$Target"/"motif1_long.motif" \
+	> ~/SELEX_analysis/testing/"$Target"/"Cycle2.motif"
+	
 
-grep -E 'M03184|M03255|M03127|M05483|M03828|M03155|M05482|M05491|M09200|M03790' \
-	"${Target}_${Cycle}_homer_long"/homerResults.txt | head -1 \
-	> "${Target}_${Cycle}_homer_long"/top_long.txt ||\
-	head -1 "${Target}_${Cycle}_homer_long"/homerResults.txt \
-	> "${Target}_${Cycle}_homer_long"/top_long.txt
+## Define spacer based on consensus sequence of top motif
+# python Consensus_sequence_search.py \
+# --tf "$Target" --cycle 2
 
-Log10pvalue_long=$( cut -f -2 "${Target}_${Cycle}_homer_long"/top_long.txt |\
-	cut -d % -f 1 )
-Per_target_long=$( cut -f 3 "${Target}_${Cycle}_homer_long"/top_long.txt |\ 
-	cut -d % -f 1 )
-Per_bg_long=$( cut -f 4 "${Target}_${Cycle}_homer_long"/top_long.txt |\
-	cut -d % -f 1 )
-Fold_change_long=$( echo "scale=2;$Per_target_long/$Per_bg_long" | bc )
-echo "%Target: $Per_target_long"
-echo "%Bg: $Per_bg_long"
-echo "Fold change: $Fold_change_long"
+for Cycle in ${Rounds[@]}
+do
 
-printf "%s\t%s\t%s\t%.2f%%\t%.2f%%\t%.2f\t%s\t%.2f%%\t%.2f%%\t%.2f\n" \
-	"$Target" "$Cycle" \
-	"$Log10pvalue_short" "$Per_target_short" "$Per_bg_short" "$Fold_change_short" \
-	"$Log10pvalue_long" "$Per_target_long" "$Per_bg_long" "$Fold_change_long" \
-	>> ~/Run_summary.txt
+	## Convert fastq file to fasta file
+	cd ~/SELEX_analysis/testing/"$Target"/"Cycle${Cycle}"
+	zcat "${Fastq_target[$Cycle]}" > "${Target}_${ZeroTag}_${Cycle}.fastq"
+	paste - - - - < "${Target}_${ZeroTag}_${Cycle}.fastq" | cut -f 1,2 |\
+	sed 's/^@/>/' |	 tr "\t" "\n" > "${Target}_${ZeroTag}_${Cycle}.fa"
+	rm "${Target}_${ZeroTag}_${Cycle}.fastq"
 
-## Remove fasta and fastq files - easy to redownload
-rm "${Target}_${ZeroTag}_${Cycle}.fa"
-rm $Fastq_target
-rm ~/NRLB/testing/"${ZeroTag}"/"${ZeroTag}.fa"
+	## Find prevalence of Cycle 2 short and long motifs
+	echo "Beginning short motif homer run for cycle $Cycle"
+	findMotifs.pl "${Target}_${ZeroTag}_${Cycle}.fa" fasta "${Target}_${Cycle}_homer" \
+	-fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" -nomotif \
+	-mknown ~/SELEX_analysis/testing/"$Target"/"Cycle2.motif" -p 3
+
+	## Convert knownResults.html to text file
+	python /data/weirauchlab/team/ches2d/MyTools/html2txt/code/html2txt.py  \
+		"${Target}_${Cycle}_homer"/knownResults.html \
+		"${Target}_${Cycle}_homer"/knownResults.txt 
+
+	## Remove fasta and fastq files - easy to redownload
+	rm "${Target}_${ZeroTag}_${Cycle}.fa"
+	rm "${Fastq_target[$Cycle]}"
+done 
+
+rm ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa"
+
+cd ~/SELEX_analysis/testing/"$Target"
+python Dimer_enrichment_calculator.py
+
