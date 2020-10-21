@@ -201,5 +201,5 @@ done
 rm ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa"
 
 cd ~/SELEX_analysis/testing/"$Target"
-python Dimer_enrichment_calculator.py
+python ~/SELEX_analysis/code/Dimer_enrichment_calculator.py
 

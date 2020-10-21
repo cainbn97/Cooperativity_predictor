@@ -16,7 +16,6 @@ TF = os.path.basename(path)
 Fold_change_mon = []
 Fold_change_dim = []
 
-
 for c in np.arange(1,5):
     c = str(c)
     file = path+'/Cycle'+c+'/'+TF+'_'+c+'_homer/knownResults.txt'
@@ -66,7 +65,8 @@ yint_dim = fit_dim[1]
 if slope_dim > slope_mon:
     print('Dimer had higher enrichment than monomer.')
     Cooperative = 'True'
-
+else:
+    Cooperative = 'False'
 
 ## Plot curves
 if Fold_change_mon[3] > Fold_change_dim[3]:
