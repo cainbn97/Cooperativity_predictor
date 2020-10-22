@@ -18,6 +18,7 @@ Fold_change_dim = []
 
 for c in np.arange(1,5):
     c = str(c)
+    print('Starting cycle ', c)
     file = path+'/Cycle'+c+'/'+TF+'_'+c+'_homer/knownResults.txt'
     with open(file) as readfile:
         for i, line in enumerate(readfile):
@@ -56,7 +57,7 @@ for c in np.arange(1,5):
 fit_mon = np.polyfit(np.arange(1,5), Fold_change_mon, 1)
 slope_mon = fit_mon[0]
 yint_mon = fit_mon[1]
-
+print(Fold_change_dim)
 fit_dim = np.polyfit(np.arange(1,5), Fold_change_dim, 1)
 slope_dim = fit_dim[0]
 yint_dim = fit_dim[1]
@@ -64,9 +65,9 @@ yint_dim = fit_dim[1]
 ## Assess cooperativity - NEEDS WORK
 if slope_dim > slope_mon:
     print('Dimer had higher enrichment than monomer.')
-    Cooperative = 'True'
+    Cooperative = round(slope_dim/slope_mon,2)
 else:
-    Cooperative = 'False'
+    Cooperative = 'N/A'
 
 ## Plot curves
 if Fold_change_mon[3] > Fold_change_dim[3]:
@@ -92,8 +93,8 @@ plt.savefig(filename)
 
 ## Write to log
 with open('/users/cainu5/SELEX_analysis/Run_summary.txt','a') as log:
-    log.write(TF+'\t'+ Cooperative +
+    log.write(TF+'\t'+ str(Cooperative) +
     '\t'+str(Consensus_seq_dim)+'\t'+str(round(slope_dim,2)) +
     '\t'+str(Consensus_seq_mon)+'\t'+str(round(slope_mon,2)) +
-    '\t'+str(Fold_change_mon)+'\t'+str(Fold_change_dim)+'\n')
+    '\t'+str(np.round(Fold_change_mon,2))+'\t'+str(np.round(Fold_change_dim,2))+'\n')
 

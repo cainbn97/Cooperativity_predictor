@@ -8,100 +8,76 @@ import os
 import re
 import operator
 import numpy as np
-import replace
 import argparse
 
 ## parse arguments from command line
 parser = argparse.ArgumentParser(description='Defines consensus sequence')
-parser.add_argument('TF', type=string, help='Define TF you would like to analyze', 
+parser.add_argument('--target', help='Define TF you would like to analyze', 
     required=True)
-parser.add_argument('Cycle', type=int, help='Define cycle you would  like to analyze', 
+parser.add_argument('--l_motif', type=int, help='Define TF you would like to analyze', 
     required=True)
 args = parser.parse_args()
 
-target=args.TF
-cycle=args.Cycle
+target = args.target
+motif_number = args.l_motif
 
 
 ## read consensus sequence
+c = 0
 path = os.getcwd()
-file = path + '/' + target + '_homer_long/homerResults/motif1.motif'
-with open(file) as readline:
+file = path + '/' + target + '_2_homer_denovo_long/homerResults/motif' + str(motif_number) + '.motif'
+with open(file,'r') as readfile:
     for line in readfile:
-        if line == 0:
+        if c == 0:
             seq_temp = line.split('>')[1]
             seq = seq_temp.split('\t')[0]
+        c = c + 1
 
 
+## Find possible dimer sites - lots of flexibility here
+## -- could also do 1 perfect, 1 very flexible site
 
-#Run code for every spacer possibility
-Found = False
-for monomer in ['TAAT','WAAT', Found == False:
+Sites = ['TAAT','ATTA']
 
-    ## find perfect monomer locations
+
+for s in Sites:
+    print('Starting search with', s)
     Start = []
     End = []
     Group = []
-    for match in re.finditer('TAAT',seq):
+    nmatches = 0
+    for match in re.finditer(s,seq):
         nmatches +=1
-        Start.append(match.start)
-        End.append(match.end)
-        Group.append(match.group)
+        Start.append(match.start())
+        End.append(match.end())
+        Group.append(match.group())
     if nmatches == 2:
         spacer = Start[1] - End[0]
-        Found = True
+        print('Dimer found using', s)
+        print('Sequence is: ', seq[Start[0]:End[1]])
+        print('Site 1 is: ', Group[0])
+        print('Site 2 is: ', Group[1])
+        break
     elif nmatches > 2:
         print(nmatches,' spacers detected')
+
     elif nmatches == 1:
-        print('No matches found with' 
+        print('No matches found.')
+        print(Start)
+        print(End)
+        print(Group)
+        print('Sequence is: ', seq[Start[0]:End[0]])
         
+        # see if less flexible second site can be found
+        Sites_flex = '[W|A|T]{4}'
+        for match_2 in re.finditer('[W|A|T]{4}'):
+            match_2 +=1
+            Start_2.append(match_2.start())
+            End_2.append(match_2.end())
+            Group_2.append(match_2.group())
+        if nmatches > 1:
+            for n in Start_2:
+                if Start[0] != Start_2[n]:
+                    
+                    
 
-
-
-    # #Forward sequence search
-    # motif_for = 'TAAT[\w]{'+str(spacer)+'}TAAT'
-    # result = re.finditer(motif_for, seq)
-
-    # #set variables
-    # nmatches = 0
-    # checklist_for = ''
-
-    # #search forward reads
-    # for match in result:
-        # nmatches += 1
-        # #Save all results to later check for duplicates
-        # #'+' added to prevent searches from spanning across separate reads
-        # checklist_for = checklist_for+file[(match.start()-2):(match.end()+2)]+'+'
-
-    # #reverse sequence search
-    # motif_rev = 'ATTA[G|A|T|C]{'+str(spacer)+'}ATTA'
-    # result = re.finditer(motif_rev, seq)
-
-    # #search reverse reads
-    # for match in result:
-        # nmatches += 1
-    
-
-    # #Check for reverse reads in forward search list
-    # check_for = re.finditer(motif_rev, checklist_for)
-
-    # #set variables
-    # checkmatch = 0
-
-    # #search for reverse motif in forward reads
-    # for match in check_for:
-        # checkmatch +=1
-        # #print(checklist_rev[(match.start()-2):(match.end()+2)])
-    
-    # #save replicates
-    # checkmatch_tot.append(checkmatch)
-
-    # #subtract replicates
-    # nmatches = nmatches - checkmatch
-
-    # #add data to vector  
-    # percent_dimer = nmatches/nhits * 100
-    # percent_dimer = round(percent_dimer, 2)
-    # final_data.append(percent_dimer)
-    # spacer = spacer - 1
-# print(final_data)   
