@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Detects top dimer site from Homer's de novo motif analysi
+Detects top dimer site from Homer's de novo motif analysis
 '''
 import os
 import numpy as np
@@ -76,7 +76,7 @@ print(Found_sites_scores_df)
 found = False
 while found == False and Found_sites_scores_df.empty == False:
     top_site2 = Found_sites_scores_df.loc[Found_sites_scores_df.loc[:,'Score'].idxmax(axis = 'columns')]
-    if ( top_site2['End'] in np.arange(top_site['Start']-1, top_site['End']+2) ) or ( top_site2['End'] in np.arange(top_site['Start']-1, top_site['End']+2)):
+    if ( top_site2['End'] in np.arange(top_site['Start']-1, top_site['End']+2) ) or ( top_site2['Start'] in np.arange(top_site['Start']-1, top_site['End']+2)):
         ## Drop overlap match and repeat
         Index = Found_sites_scores_df.loc[:,'Score'].idxmax(axis = 'columns')
         Found_sites_scores_df = Found_sites_scores_df.drop(Index)

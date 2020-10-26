@@ -31,7 +31,7 @@ then
 	exit 1
 fi
 
-# Make necessary directories and download files
+## Make necessary directories and download files
 mkdir $TF; 
 cd $TF
 mkdir Cycle1; mkdir Cycle2; mkdir Cycle3; mkdir Cycle4
@@ -131,29 +131,18 @@ findMotifs.pl "${Target}_${ZeroTag}_3.fa" fasta "${Target}_3_homer_denovo_short"
 -mcheck /data/weirauchlab/databank/appdata/HOMER/customizedTFs/v2.00/human_cisbp200.motif \
 -noredun -len 6,8 -p 8 -noknown
 
-python /data/weirauchlab/team/ches2d/MyTools/html2txt/code/html2txt.py  \
+python ~/SELEX_analysis/code/htmltotext.py \
 	"${Target}_3_homer_denovo_short"/homerResults.html \
 	"${Target}_3_homer_denovo_short"/homerResults.txt 
 
+
 ## Pull out top relevant motif - searches for homeodomain output
-grep -E -n \
-	'POU2F2|ALX3|ALX4|ARX|BARHL2|BARX1|BSX|CART1|CDX1|CDX2|DLX1|DLX2|DLX3|DLX4|DLX5|DLX6|DMBX1|DPRX|DRGX|DUXA|EMX1|EMX2|EN1|EN2|ESX1|EVX1|EVX2|GBX1|GBX2|GSC|GSC2|GSX1|GSX2|HESX1|HMBOX1|HMX1|HMX2|HMX3|HNF1A|HNF1B|HOXA1|HOXA10|HOXA13|HOXA2|HOXB13HOXB2|HOXB3|HOXB5|HOXC10|HOXC11|HOXC12|HOXC13|HOXD11|HOXD12|HOXD13|HOXD8|IRX2|IRX5|ISL2|ISX|LBX2|LHX2|LHX6|LHX9|LMX1A|LMX1B|MEOX1|MEOX2|MIXL1|MNX1|MSX1|MSX2|NKX2-3|NKX2-8|NKX3-1|NKX3-2|NKX6-1|NKX6-2|NOTO|OTX1|OTX2|PDX1|PHOX2A|PHOX2B|PITX1|PITX3|PROP1|PRRX1|PRRX2|RAX|RAXL1|RHOXF1|SHOX|SHOX2|UNCX|VAX1|VAX2|VENTX|VSX1|VSX2' \
+grep -E \
+	'POU3F1|POU2F2|ALX3|ALX4|ARX|BARHL2|BARX1|BSX|CART1|CDX1|CDX2|DLX1|DLX2|DLX3|DLX4|DLX5|DLX6|DMBX1|DPRX|DRGX|DUXA|EMX1|EMX2|EN1|EN2|ESX1|EVX1|EVX2|GBX1|GBX2|GSC|GSC2|GSX1|GSX2|HESX1|HMBOX1|HMX1|HMX2|HMX3|HNF1A|HNF1B|HOXA1|HOXA10|HOXA13|HOXA2|HOXB13HOXB2|HOXB3|HOXB5|HOXC10|HOXC11|HOXC12|HOXC13|HOXD11|HOXD12|HOXD13|HOXD8|IRX2|IRX5|ISL2|ISX|LBX2|LHX2|LHX6|LHX9|LMX1A|LMX1B|MEOX1|MEOX2|MIXL1|MNX1|MSX1|MSX2|NKX2-3|NKX2-8|NKX3-1|NKX3-2|NKX6-1|NKX6-2|NOTO|OTX1|OTX2|PDX1|PHOX2A|PHOX2B|PITX1|PITX3|PROP1|PRRX1|PRRX2|RAX|RAXL1|RHOXF1|SHOX|SHOX2|UNCX|VAX1|VAX2|VENTX|VSX1|VSX2' \
 	"${Target}_3_homer_denovo_short"/homerResults.txt | head -1 \
 	> "${Target}_3_homer_denovo_short"/top_short.txt
-	
-## Check if monomer was found
-if [ -s "${Target}_3_homer_denovo_short"/top_short.txt ]
-then
-	echo 'TAAT motif found. Continuing to long de novo motif'
-else
-	echo 'No TAAT motif found. Exiting'
-	rm "${Target}_${ZeroTag}_${Cycle}.fa"
-	rm "${Fastq_target[$Cycle]}"
-	rm ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa"
-	exit 1
-fi
 
-# De novo motif analysis of cycle 3 long
+## De novo motif analysis of cycle 3 long
 echo "Starting de novo motif analysis for Cycle3-long"
 findMotifs.pl "${Target}_${ZeroTag}_3.fa" fasta "${Target}_3_homer_denovo_long" \
 -fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
@@ -161,36 +150,21 @@ findMotifs.pl "${Target}_${ZeroTag}_3.fa" fasta "${Target}_3_homer_denovo_long" 
 -noredun -len 16,18,20 -p 8 -noknown
 rm "${Target}_${ZeroTag}_3.fa"
 
-python /data/weirauchlab/team/ches2d/MyTools/html2txt/code/html2txt.py  \
+python ~/SELEX_analysis/code/htmltotext.py \
 	"${Target}_3_homer_denovo_long"/homerResults.html \
 	"${Target}_3_homer_denovo_long"/homerResults.txt 
 
 
-## Check if dimer was found
-if grep -q \
-	'M05360_2.00|M02187_2.00|M03076_2.00|M03104_2.00|M03107_2.00|M03109_2.00|M03116_2.00|M03127_2.00|M03144_2.00|M03150_2.00|M03155_2.00|M03159_2.00|M03162_2.00|M03170_2.00|M03184_2.00|M03188_2.00|M03197_2.00|M03246_2.00|M03249_2.00|M03255_2.00|M03260_2.00|M03288_2.00|M03300_2.00|M03302_2.00|M03304_2.00|M03310_2.00|M03311_2.00|M03790_2.00|M03792_2.00|M03807_2.00|M03819_2.00|M03821_2.00|M03828_2.00|M03864_2.00|M05120_2.00|M05121_2.00|M05233_2.00|M05234_2.00|M05235_2.00|M05236_2.00|M05315_2.00|M05316_2.00|M05349_2.00|M05356_2.00|M05444_2.00|M05477_2.00|M05482_2.00|M05483_2.00|M05491_2.00|M05501_2.00|M05503_2.00|M05504_2.00|M07976_2.00|M09139_2.00|M09144_2.00|M09151_2.00|M09168_2.00|M09176_2.00|M09179_2.00|M09191_2.00|M09200_2.00|M09219_2.00|M09220_2.00|M09222_2.00|M09227_2.00|M09228_2.00|M10652_2.00|M10665_2.00|M10690_2.00|M10691_2.00|M10693_2.00|M10704_2.00|M10717_2.00|M10741_2.00|M10759_2.00|M10767_2.00|M10771_2.00|M10784_2.00|M10788_2.00|M10823_2.00|M10826_2.00|M10827_2.00|M10829_2.00|M10835_2.00|M10843_2.00|M10848_2.00|M10849_2.00' \
-	"${Target}_3_homer_denovo_long"/homerResults.txt
-then
-	echo 'Dimer motif found. Continuing to searches.'
-else
-	echo 'No HD long motif found. Exiting'
-	rm "${Target}_${ZeroTag}_${Cycle}.fa"
-	rm "${Fastq_target[$Cycle]}"
-	rm ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa"
-	echo "$TF" 'No HD long motif found' >> /users/cainu5/SELEX_analysis/Run_summary.txt
-	exit 1
-fi
-
 ## Pull out top relevant long motif - searches for long homeodomain output
-grep -E -n \
-'M05360_2.00|M02187_2.00|M03076_2.00|M03104_2.00|M03107_2.00|M03109_2.00|M03116_2.00|M03127_2.00|M03144_2.00|M03150_2.00|M03155_2.00|M03159_2.00|M03162_2.00|M03170_2.00|M03184_2.00|M03188_2.00|M03197_2.00|M03246_2.00|M03249_2.00|M03255_2.00|M03260_2.00|M03288_2.00|M03300_2.00|M03302_2.00|M03304_2.00|M03310_2.00|M03311_2.00|M03790_2.00|M03792_2.00|M03807_2.00|M03819_2.00|M03821_2.00|M03828_2.00|M03864_2.00|M05120_2.00|M05121_2.00|M05233_2.00|M05234_2.00|M05235_2.00|M05236_2.00|M05315_2.00|M05316_2.00|M05349_2.00|M05356_2.00|M05444_2.00|M05477_2.00|M05482_2.00|M05483_2.00|M05491_2.00|M05501_2.00|M05503_2.00|M05504_2.00|M07976_2.00|M09139_2.00|M09144_2.00|M09151_2.00|M09168_2.00|M09176_2.00|M09179_2.00|M09191_2.00|M09200_2.00|M09219_2.00|M09220_2.00|M09222_2.00|M09227_2.00|M09228_2.00|M10652_2.00|M10665_2.00|M10690_2.00|M10691_2.00|M10693_2.00|M10704_2.00|M10717_2.00|M10741_2.00|M10759_2.00|M10767_2.00|M10771_2.00|M10784_2.00|M10788_2.00|M10823_2.00|M10826_2.00|M10827_2.00|M10829_2.00|M10835_2.00|M10843_2.00|M10848_2.00|M10849_2.00' \
+grep -E \
+'M09181_2.00|M03181_2.00|M05360_2.00|M02187_2.00|M03076_2.00|M03104_2.00|M03107_2.00|M03109_2.00|M03116_2.00|M03127_2.00|M03144_2.00|M03150_2.00|M03155_2.00|M03159_2.00|M03162_2.00|M03170_2.00|M03184_2.00|M03188_2.00|M03197_2.00|M03246_2.00|M03249_2.00|M03255_2.00|M03260_2.00|M03288_2.00|M03300_2.00|M03302_2.00|M03304_2.00|M03310_2.00|M03311_2.00|M03790_2.00|M03792_2.00|M03807_2.00|M03819_2.00|M03821_2.00|M03828_2.00|M03864_2.00|M05120_2.00|M05121_2.00|M05233_2.00|M05234_2.00|M05235_2.00|M05236_2.00|M05315_2.00|M05316_2.00|M05349_2.00|M05356_2.00|M05444_2.00|M05477_2.00|M05482_2.00|M05483_2.00|M05491_2.00|M05501_2.00|M05503_2.00|M05504_2.00|M07976_2.00|M09139_2.00|M09144_2.00|M09151_2.00|M09176_2.00|M09179_2.00|M09191_2.00|M09200_2.00|M09219_2.00|M09220_2.00|M09222_2.00|M09227_2.00|M09228_2.00|M10652_2.00|M10665_2.00|M10690_2.00|M10691_2.00|M10693_2.00|M10704_2.00|M10717_2.00|M10741_2.00|M10759_2.00|M10767_2.00|M10771_2.00|M10784_2.00|M10788_2.00|M10823_2.00|M10826_2.00|M10827_2.00|M10829_2.00|M10835_2.00|M10843_2.00|M10848_2.00|M10849_2.00' \
 "${Target}_3_homer_denovo_long"/homerResults.txt | head -1 \
 > "${Target}_3_homer_denovo_long"/top_long.txt
 
 
 ## Copy relevant motifs to TF directory
-s_motif_number=$( cut -d : -f 1 "${Target}_3_homer_denovo_short"/top_short.txt )
-l_motif_number=$( cut -d : -f 1 "${Target}_3_homer_denovo_long"/top_long.txt )
+s_motif_number=$( cut -f 1 "${Target}_3_homer_denovo_short"/top_short.txt )
+l_motif_number=$( cut -f 1 "${Target}_3_homer_denovo_long"/top_long.txt )
 cp "${Target}_3_homer_denovo_short/homerResults/motif${s_motif_number}.motif" \
 	~/SELEX_analysis/testing/"$Target"/"motif${s_motif_number}_short.motif"
 cp "${Target}_3_homer_denovo_long/homerResults/motif${l_motif_number}.motif" \
@@ -201,17 +175,9 @@ cat ~/SELEX_analysis/testing/"$Target"/"motif${s_motif_number}_short.motif" \
 	
 
 ### Define spacer based on consensus sequence of top motif
-python Consensus_sequence_search.py 
+cd ~/SELEX_analysis/testing/"$Target"
+python ~/SELEX_analysis/code/Consensus_sequence_search.py 
 
-if grep -q 'N/A' long_motif_consensus.txt
-then
-	echo 'No dimer sequence found. Exiting'
-	rm "${Target}_${ZeroTag}_${Cycle}.fa"
-	rm "${Fastq_target[$Cycle]}"
-	rm ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa"
-	echo "$TF" 'No dimer found' >> /users/cainu5/SELEX_analysis/Run_summary.txt
-	exit 1
-fi
 
 for Cycle in ${Rounds[@]}
 do
@@ -227,10 +193,10 @@ do
 	echo "Beginning short motif homer run for cycle $Cycle"
 	findMotifs.pl "${Target}_${ZeroTag}_${Cycle}.fa" fasta "${Target}_${Cycle}_homer" \
 	-fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" -nomotif \
-	-mknown ~/SELEX_analysis/testing/"$Target"/"Cycle3.motif" -p 8 -noredun
+	-mknown ~/SELEX_analysis/testing/"$Target"/"Cycle3.motif" -p 8
 
 	## Convert knownResults.html to text file
-	python /data/weirauchlab/team/ches2d/MyTools/html2txt/code/html2txt.py  \
+	python ~/SELEX_analysis/code/htmltotext.py \
 		"${Target}_${Cycle}_homer"/knownResults.html \
 		"${Target}_${Cycle}_homer"/knownResults.txt 
 
