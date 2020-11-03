@@ -27,7 +27,7 @@ for c in np.arange(1,5):
     
     ## Check if long motif was found
     if os.path.exists(file) == False:
-        with open('/users/cainu5/SELEX_analysis/Run_summary_103120.txt','a') as log:
+        with open('/users/cainu5/SELEX_analysis/Run_summary_110320.txt','a') as log:
             log.write(TF+'\t'+'No long motif found'+'\n')
         print('No long motif found. Exiting')
         exit()
@@ -46,7 +46,7 @@ for c in np.arange(1,5):
                     ## Check lengths - some motifs will not be found at each cycle
                     if len(Fold_change_mon) != int(c):
                         Fold_change_mon.append(0)
-                        notes.append('Monomer motif missing on cycle'+str(c))
+                        notes.append('Monomer motif missing on cycle '+str(c))
                         
   
                     ## Parse monomer
@@ -66,7 +66,7 @@ for c in np.arange(1,5):
                     ## Check lengths - some motifs will not be found at each cycle
                     if len(Fold_change_dim) != int(c):
                         Fold_change_dim.append(0)
-                        notes.append('Monomer motif missing on cycle'+str(c))
+                        notes.append('Monomer motif missing on cycle '+str(c))
                         
                     ## Parse dimer
                     Consensus_seq_dim = Consensus_seq
@@ -81,11 +81,13 @@ for c in np.arange(1,5):
                 
 
 ## Check for possible oversaturation - remove fourth cycle               
-if Target_percent_mon[-2] > 50: 
-    Target_percent_mon[-1] = 0
+if Target_percent_mon[-2] > 50:
+    notes.append('Cycle 4 monomer fold change ('+str(round(Fold_change_mon[-1],2))+') masked to avoid saturation')
+    Fold_change_mon[-1] = 0
 
 if Target_percent_dim[-2] > 50:
-    Target_percent_dim[-1] = 0
+    notes.append('Cycle 4 dimer fold change ('+str(round(Fold_change_dim[-1],2))+') masked to avoid saturation')
+    Fold_change_dim[-1] = 0
 
 
 ## Check for prevalence of dimer site at cycle 3 - where de novo motif found
@@ -95,9 +97,9 @@ if Target_percent_dim[-2] < 1:
     Cooperative = 0
     notes.append('Dimer motif at Cycle 3 had an enrichment of <1%.')
     print('Dimer prevalence less than 1% - exiting')
-    with open('/users/cainu5/SELEX_analysis/Run_summary_103120.txt','a') as log:
+    with open('/users/cainu5/SELEX_analysis/Run_summary_110320.txt','a') as log:
         log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
-        '\t'+str(Consensus_seq_dim)+'\t'+''+'\t'''+'\t'+''+
+        '\t'+str(Consensus_seq_dim)+'\t'+''+'\t'''+
         '\t'+str(Consensus_seq_mon)+'\t'+''+'\t'+''+'\t'+''+'\t'+str(notes)+
         '\n')
         exit()
@@ -173,7 +175,7 @@ with open(long_consensus_path, 'r') as dimer:
         dimer_site = line
 
 ## Write to log
-with open('/users/cainu5/SELEX_analysis/Run_summary_103120.txt','a') as log:
+with open('/users/cainu5/SELEX_analysis/Run_summary_110320.txt','a') as log:
     log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
     '\t'+str(Consensus_seq_dim)+'\t'+str(round(slope_dim,2))+'\t'+str(round(R2_dim,4))+
     '\t'+str(Consensus_seq_mon)+'\t'+str(round(slope_mon,2))+'\t'+str(round(R2_mon,4))+

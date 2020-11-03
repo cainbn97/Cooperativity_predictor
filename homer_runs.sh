@@ -129,7 +129,7 @@ echo "Starting de novo motif analysis for Cycle3-short"
 findMotifs.pl "${Target}_${ZeroTag}_3.fa" fasta "${Target}_3_homer_denovo_short" \
 -fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
 -mcheck /data/weirauchlab/databank/appdata/HOMER/customizedTFs/v2.00/human_cisbp200.motif \
--noredun -len 6,8 -p 8 -noknown
+-noredun -len 6,8 -p 4 -noknown
 
 python ~/SELEX_analysis/code/htmltotext.py \
 	"${Target}_3_homer_denovo_short"/homerResults.html \
@@ -138,7 +138,7 @@ python ~/SELEX_analysis/code/htmltotext.py \
 
 ## Pull out top relevant motif - searches for homeodomain output
 grep -E \
-	'POU3F1|POU2F2|ALX3|ALX4|ARX|BARHL2|BARX1|BSX|CART1|CDX1|CDX2|DLX1|DLX2|DLX3|DLX4|DLX5|DLX6|DMBX1|DPRX|DRGX|DUXA|EMX1|EMX2|EN1|EN2|ESX1|EVX1|EVX2|GBX1|GBX2|GSC|GSC2|GSX1|GSX2|HESX1|HMBOX1|HMX1|HMX2|HMX3|HNF1A|HNF1B|HOXA1|HOXA10|HOXA13|HOXA2|HOXB13HOXB2|HOXB3|HOXB5|HOXC10|HOXC11|HOXC12|HOXC13|HOXD11|HOXD12|HOXD13|HOXD8|IRX2|IRX5|ISL2|ISX|LBX2|LHX2|LHX6|LHX9|LMX1A|LMX1B|MEOX1|MEOX2|MIXL1|MNX1|MSX1|MSX2|NKX2-3|NKX2-8|NKX3-1|NKX3-2|NKX6-1|NKX6-2|NOTO|OTX1|OTX2|PDX1|PHOX2A|PHOX2B|PITX1|PITX3|PROP1|PRRX1|PRRX2|RAX|RAXL1|RHOXF1|SHOX|SHOX2|UNCX|VAX1|VAX2|VENTX|VSX1|VSX2' \
+	'PAX3|POU3F1|POU2F2|ALX3|ALX4|ARX|BARHL2|BARX1|BSX|CART1|CDX1|CDX2|DLX1|DLX2|DLX3|DLX4|DLX5|DLX6|DBX1|DMBX1|DPRX|DRGX|DUXA|EMX1|EMX2|EN1|EN2|ESX1|EVX1|EVX2|GBX1|GBX2|GSC|GSC2|GSX1|GSX2|HESX1|HMBOX1|HMX1|HMX2|HMX3|HNF1A|HNF1B|HOXA1|HOXA10|HOXA13|HOXA2|HOXB13HOXB2|HOXB3|HOXB5|HOXC10|HOXC11|HOXC12|HOXC13|HOXD11|HOXD12|HOXD13|HOXD8|IRX2|IRX5|ISL2|ISX|LBX2|LHX2|LHX6|LHX9|LMX1A|LMX1B|MEOX1|MEOX2|MIXL1|MNX1|MSX1|MSX2|NKX2-3|NKX2-8|NKX3-1|NKX3-2|NKX6-1|NKX6-2|NOTO|OTX1|OTX2|PDX1|PHOX2A|PHOX2B|PITX1|PITX3|PROP1|PRRX1|PRRX2|RAX|RAXL1|RHOXF1|SHOX|SHOX2|UNCX|VAX1|VAX2|VENTX|VSX1|VSX2' \
 	"${Target}_3_homer_denovo_short"/homerResults.txt | head -1 \
 	> "${Target}_3_homer_denovo_short"/top_short.txt
 
@@ -147,7 +147,7 @@ echo "Starting de novo motif analysis for Cycle3-long"
 findMotifs.pl "${Target}_${ZeroTag}_3.fa" fasta "${Target}_3_homer_denovo_long" \
 -fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
 -mcheck /data/weirauchlab/databank/appdata/HOMER/customizedTFs/v2.00/human_cisbp200.motif \
--noredun -len 16,18,20 -p 8 -noknown
+-noredun -len 16,18,20 -p 4 -noknown
 rm "${Target}_${ZeroTag}_3.fa"
 
 python ~/SELEX_analysis/code/htmltotext.py \
@@ -193,7 +193,7 @@ do
 	echo "Beginning short motif homer run for cycle $Cycle"
 	findMotifs.pl "${Target}_${ZeroTag}_${Cycle}.fa" fasta "${Target}_${Cycle}_homer" \
 	-fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" -nomotif \
-	-mknown ~/SELEX_analysis/testing/"$Target"/"Cycle3.motif" -p 8
+	-mknown ~/SELEX_analysis/testing/"$Target"/"Cycle3.motif" -p 4 -noweight
 
 	## Convert knownResults.html to text file
 	python ~/SELEX_analysis/code/htmltotext.py \

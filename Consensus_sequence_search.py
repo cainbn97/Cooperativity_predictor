@@ -96,6 +96,9 @@ elif top_site['Start'] > top_site2['Start']:
     Spacer = top_site['Start'] - top_site2['End'] - 1
     dimer_site = top_site2['Seq'] + str(Spacer) + 'N' + top_site['Seq']
 
+if Spacer < 0:
+    dimer_site = 'NA'
+
 export_path = path + '/long_motif_consensus.txt'
 with open(export_path,'w') as log:
     log.write(dimer_site)
