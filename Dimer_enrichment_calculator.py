@@ -19,18 +19,30 @@ Bg_percent_mon = []; Bg_percent_dim = []
 Target_percent_mon = []
 Target_percent_dim = []
 notes = []
+Run_summary = '/users/cainu5/SELEX_analysis/Run_summary_110720_cycle4.txt'
+
+## Check if homer run finished
+homer_html = path+'/Cycle4/'+TF+'_'+'4_homer_denovo_long/homerResults.html'
+
+if os.path.exists(homer_html) == False:
+    with open(Run_summary,'a') as log:
+        log.write(TF+'\tRun did not finish within 24 hours\n')
+    print('Run did not complete.')
+    exit()
+
+# Check if long motif was found
+file_top_long = path+'/Cycle4/'+TF+'_4_homer_denovo_long/top_long.txt'
+
+if os.stat(file_top_long).st_size == 0:
+    with open(Run_summary,'a') as log:
+        log.write(TF+'\t'+'No long motif found'+'\n')
+    print('No long motif found. Exiting')
+    exit()
 
 for c in np.arange(1,5):
     c = str(c)
     print('Starting cycle ', c)
     file = path+'/Cycle'+c+'/'+TF+'_'+c+'_homer/knownResults.txt'
-    
-    ## Check if long motif was found
-    if os.path.exists(file) == False:
-        with open('/users/cainu5/SELEX_analysis/Run_summary_110320.txt','a') as log:
-            log.write(TF+'\t'+'No long motif found'+'\n')
-        print('No long motif found. Exiting')
-        exit()
        
     ## Read in motif files
     with open(file) as readfile:
@@ -42,7 +54,7 @@ for c in np.arange(1,5):
             else:
                 Consensus_seq_temp = line.split('-')[1]
                 Consensus_seq = Consensus_seq_temp.split(',')[0]
-                if len(Consensus_seq) < 10:                   
+                if i == 1: #len(Consensus_seq) < 10: 
                     ## Check lengths - some motifs will not be found at each cycle
                     if len(Fold_change_mon) != int(c):
                         Fold_change_mon.append(0)
@@ -61,8 +73,7 @@ for c in np.arange(1,5):
                     Fold_change_mon.append(Fold_change)
                     
                                         
-                elif len(Consensus_seq) > 10:                    
-                                        
+                elif i == 2:                           
                     ## Check lengths - some motifs will not be found at each cycle
                     if len(Fold_change_dim) != int(c):
                         Fold_change_dim.append(0)
@@ -72,11 +83,17 @@ for c in np.arange(1,5):
                     Consensus_seq_dim = Consensus_seq
                     Target_percent_temp = line.split('\t')[6]
                     Target_percent_dim.append(round(float(Target_percent_temp.split('%')[0]),2))
-                
+                    print(Target_percent_dim)
                     Bg_percent_temp = line.split('\t')[8]
                     Bg_percent_dim.append(round(float(Bg_percent_temp.split('%')[0]),2))
                     
-                    Fold_change = Target_percent_dim[-1]/Bg_percent_dim[0]
+                    try:
+                        Fold_change = Target_percent_dim[-1]/Bg_percent_dim[0]
+                    except ZeroDivisionError:
+                        Fold_change = Target_percent_dim[-1]/(Bg_percent_dim[0]+0.01)
+                        notes.append('0.01 added to Cycle '+str(c) + 
+                            ' to avoid divide by zero error.')
+                    
                     Fold_change_dim.append(Fold_change)
                 
 
@@ -89,7 +106,6 @@ if Target_percent_dim[-2] > 50:
     notes.append('Cycle 4 dimer fold change ('+str(round(Fold_change_dim[-1],2))+') masked to avoid saturation')
     Fold_change_dim[-1] = 0
 
-
 ## Check for prevalence of dimer site at cycle 3 - where de novo motif found
 if Target_percent_dim[-2] < 1:
     ## Write to log
@@ -97,14 +113,13 @@ if Target_percent_dim[-2] < 1:
     Cooperative = 0
     notes.append('Dimer motif at Cycle 3 had an enrichment of <1%.')
     print('Dimer prevalence less than 1% - exiting')
-    with open('/users/cainu5/SELEX_analysis/Run_summary_110320.txt','a') as log:
+    with open(Run_summary,'a') as log:
         log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
         '\t'+str(Consensus_seq_dim)+'\t'+''+'\t'''+
         '\t'+str(Consensus_seq_mon)+'\t'+''+'\t'+''+'\t'+''+'\t'+str(notes)+
         '\n')
         exit()
                 
-
 ## Initialize arrays
 cy = np.arange(0,5)
 Fold_change_mon = np.array(Fold_change_mon)
@@ -175,7 +190,7 @@ with open(long_consensus_path, 'r') as dimer:
         dimer_site = line
 
 ## Write to log
-with open('/users/cainu5/SELEX_analysis/Run_summary_110320.txt','a') as log:
+with open(Run_summary,'a') as log:
     log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
     '\t'+str(Consensus_seq_dim)+'\t'+str(round(slope_dim,2))+'\t'+str(round(R2_dim,4))+
     '\t'+str(Consensus_seq_mon)+'\t'+str(round(slope_mon,2))+'\t'+str(round(R2_mon,4))+

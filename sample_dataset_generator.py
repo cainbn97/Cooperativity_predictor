@@ -14,6 +14,7 @@ from random import choice
 from random import shuffle
 import os
 import re
+import subprocess
 
 def rand_nuc(length):
     DNA = ''   
@@ -58,7 +59,7 @@ parser.add_argument('--name', action = 'store', dest = 'name',
 parser.add_argument('-L','--length', dest = 'Seq_len', 
     type = int, default = 20, help='Length of each sequence')
 parser.add_argument('-S','--spacer', action = 'store', dest = 'spacer',
-    type = int, default = 7, help = 'Enter desired dimer sequence')
+    type = int, default = 7, help = 'Desired dimer sequence')
 
 args = parser.parse_args()
 Seq_tot = args.Seq_tot
@@ -184,3 +185,5 @@ else:
     print('Monomer sites do not match input')
     print('Input: '+ str(Seq_mon))
     print('Output: '+ str(nmatches-Seq_dim*2))
+
+## gzip the file
