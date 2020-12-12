@@ -84,8 +84,6 @@ while found == False and Found_sites_scores_df.empty == False:
     else:
         found = True
     
-print(top_site)
-print(top_site2)
 
 if top_site['Start'] < top_site2['Start']:
     ## top site is first site
@@ -102,3 +100,22 @@ if Spacer < 0:
 export_path = path + '/long_motif_consensus.txt'
 with open(export_path,'w') as log:
     log.write(dimer_site)
+
+    
+    
+# ## For COSMO runs
+
+## Index top sites from motif file
+motif1 = motif.loc[top_site['Start']:top_site['End']]*100
+motif1 = motif1.transpose()
+
+motif2 = motif.loc[top_site2['Start']:top_site2['End']]*100
+motif2 = motif2.transpose()
+
+TF = os.path.basename(path)
+export_path_COSMO = '/users/cainu5/SELEX_analysis/COSMO_output/' + TF + '/motifs/'
+with open(export_path_COSMO + 'motif1.jpwm','w') as log:
+    log.write(motif1.to_string(index = False, header = False))
+with open(export_path_COSMO + 'motif2.jpwm','w') as log:
+    log.write(motif2.to_string(index = False, header = False))
+

@@ -14,8 +14,8 @@ module load python3
 
 ## Bring in arguments
 TF=${1:?Expected target file as argument #1}
-Target_link=${2:?Expected target file as argument #2}
-Zero_link=${3:?Expected target file as argument #4}
+# Target_link=${2:?Expected target file as argument #2}
+# Zero_link=${3:?Expected target file as argument #4}
 Target=$TF
 
 cd ~/SELEX_analysis/testing
@@ -24,52 +24,52 @@ cd ~/SELEX_analysis/testing
 ## ACQUIRE FASTQ FROM ENA DATABASE ##
 #####################################
 
-## Check if folder already exists
+# ## Check if folder already exists
 # if [ -d "$TF" ]
 # then
 	# echo "Have you run Homer for this dataset?"
 	# exit 1
 # fi
 
-## Make necessary directories and download files
-#mkdir $TF; 
-cd $TF
-#mkdir Cycle1; mkdir Cycle2; mkdir Cycle3; mkdir Cycle4
+# ## Make necessary directories and download files
+# mkdir $TF; 
+# cd $TF
+# mkdir Cycle1; mkdir Cycle2; mkdir Cycle3; mkdir Cycle4
 
-## Read sample accession of cycle 1 and extrapolate other cycle accessions
-SampAcc_Cycle1=$( echo "$Target_link" | cut -d / -f 5 | cut -d R -f 3 )
-SampAcc_Cycle2=$(( SampAcc_Cycle1 + 1 ))
-SampAcc_Cycle3=$(( SampAcc_Cycle1 + 2 ))
-SampAcc_Cycle4=$(( SampAcc_Cycle1 + 3 ))
+# ## Read sample accession of cycle 1 and extrapolate other cycle accessions
+# SampAcc_Cycle1=$( echo "$Target_link" | cut -d / -f 5 | cut -d R -f 3 )
+# SampAcc_Cycle2=$(( SampAcc_Cycle1 + 1 ))
+# SampAcc_Cycle3=$(( SampAcc_Cycle1 + 2 ))
+# SampAcc_Cycle4=$(( SampAcc_Cycle1 + 3 ))
 
-## Piece together target links
-LINK1="$Target_link"
-LINK2=$( echo $Target_link |\
-	cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle2}/"$( echo $Target_link |\
-	cut -d / -f 6 | cut -d _ -f 1,2,3 )"_2.fastq.gz"
-LINK3=$( echo $Target_link |\
-	cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle3}/"$( echo $Target_link |\
-	cut -d / -f 6 | cut -d _ -f 1,2,3 )"_3.fastq.gz"
-LINK4=$( echo $Target_link |\
-	cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle4}/"$( echo $Target_link |\
-	cut -d / -f 6 | cut -d _ -f 1,2,3 )"_4.fastq.gz"
+# ## Piece together target links
+# LINK1="$Target_link"
+# LINK2=$( echo $Target_link |\
+	# cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle2}/"$( echo $Target_link |\
+	# cut -d / -f 6 | cut -d _ -f 1,2,3 )"_2.fastq.gz"
+# LINK3=$( echo $Target_link |\
+	# cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle3}/"$( echo $Target_link |\
+	# cut -d / -f 6 | cut -d _ -f 1,2,3 )"_3.fastq.gz"
+# LINK4=$( echo $Target_link |\
+	# cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle4}/"$( echo $Target_link |\
+	# cut -d / -f 6 | cut -d _ -f 1,2,3 )"_4.fastq.gz"
 
-ZeroTag=$( echo $Zero_link | cut -d '_' -f 2 )
-echo $ZeroTag; cd ~/SELEX_analysis/testing
-if [ -e */"ZeroCycle_${ZeroTag}_0_0.fastq.gz" ]
-then
-	echo "Zero cycle has been downloaded"
-else
-	cd ~/SELEX_analysis/testing
-	mkdir "$ZeroTag"; cd "$ZeroTag"
-	curl -flOJ "$Zero_link"
-fi
+ZeroTag=verification_0
+# echo $ZeroTag; cd ~/SELEX_analysis/testing
+# if [ -e */"ZeroCycle_${ZeroTag}_0_0.fastq.gz" ]
+# then
+	# echo "Zero cycle has been downloaded"
+# else
+	# cd ~/SELEX_analysis/testing
+	# mkdir "$ZeroTag"; cd "$ZeroTag"
+	# curl -flOJ "$Zero_link"
+# fi
 
 cd ~/SELEX_analysis/testing/"$Target"
-cd Cycle1; curl -flOJ "$Target_link"
-cd ../Cycle2; curl -flOJ "$LINK2"
-cd ../Cycle3; curl -flOJ "$LINK3"
-cd ../Cycle4; curl -flOJ "$LINK4"
+# cd Cycle1; curl -flOJ "$Target_link"
+# cd ../Cycle2; curl -flOJ "$LINK2"
+# cd ../Cycle3; curl -flOJ "$LINK3"
+# cd ../Cycle4; curl -flOJ "$LINK4"
 
 ## Grab downloaded fastq file names in a vector
 Rounds=(1 2 3 4)
@@ -125,7 +125,7 @@ sed 's/^@/>/' | tr "\t" "\n" | head -100000 > "${Target}_${ZeroTag}_4.fa"
 rm "${Target}_${ZeroTag}_4.fastq"
 
 # De novo motif analysis of cycle 3 short
-echo "Starting de novo motif analysis for Cycle3-short"
+# echo "Starting de novo motif analysis for Cycle3-short"
 # findMotifs.pl "${Target}_${ZeroTag}_4.fa" fasta "${Target}_4_homer_denovo_short" \
 # -fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
 # -mcheck /data/weirauchlab/databank/appdata/HOMER/customizedTFs/v2.00/human_cisbp200.motif \
@@ -136,12 +136,10 @@ python ~/SELEX_analysis/code/htmltotext.py \
 	"${Target}_4_homer_denovo_short"/homerResults.txt 
 
 
-## Pull out top relevant motif - searches for homeodomain output but not long motif output
+## Pull out top relevant motif - searches for homeodomain output
 grep -E \
-	'PAX3|POU3F1|POU2F2|ALX3|ALX4|ARX|BARHL2|BARX1|BSX|CART1|CDX1|CDX2|DLX1|DLX2|DLX3|DLX4|DLX5|DLX6|DBX1|DMBX1|DPRX|DRGX|DUXA|EMX1|EMX2|EN1|EN2|ESX1|EVX1|EVX2|GBX1|GBX2|GSC|GSC2|GSX1|GSX2|HESX1|HMBOX1|HMX1|HMX2|HMX3|HNF1A|HNF1B|HOXA1|HOXA10|HOXA13|HOXA2|HOXB13HOXB2|HOXB3|HOXB5|HOXC10|HOXC11|HOXC12|HOXC13|HOXD11|HOXD12|HOXD13|HOXD8|IRX2|IRX5|ISL2|ISX|LBX2|LHX2|LHX6|LHX9|LMX1A|LMX1B|MEOX1|MEOX2|MIXL1|MNX1|MSX1|MSX2|NKX2-3|NKX2-8|NKX3-1|NKX3-2|NKX6-1|NKX6-2|NOTO|OTX1|OTX2|PDX1|PHOX2A|PHOX2B|PITX1|PITX3|PROP1|PRRX1|PRRX2|RAX|RAXL1|RHOXF1|SHOX|SHOX2|UNCX|VAX1|VAX2|VENTX|VSX1|VSX2|ZNF333' \
-	"${Target}_4_homer_denovo_short"/homerResults.txt | 
-	grep -vE 'M10736|M03191|M03264_2.00|M03846_2.00|M03216_2.00|M03244_2.00|M05430_2.00|M09586_2.00|M03269_2.00|M03273_2.00|M09181_2.00|M03181_2.00|M05360_2.00|M02187_2.00|M03076_2.00|M03104_2.00|M03107_2.00|M03109_2.00|M03116_2.00|M03127_2.00|M03144_2.00|M03150_2.00|M03155_2.00|M03159_2.00|M03162_2.00|M03170_2.00|M03184_2.00|M03188_2.00|M03197_2.00|M03246_2.00|M03249_2.00|M03255_2.00|M03260_2.00|M03288_2.00|M03300_2.00|M03302_2.00|M03304_2.00|M03310_2.00|M03311_2.00|M03790_2.00|M03792_2.00|M03807_2.00|M03819_2.00|M03821_2.00|M03828_2.00|M03864_2.00|M05120_2.00|M05121_2.00|M05233_2.00|M05234_2.00|M05235_2.00|M05236_2.00|M05315_2.00|M05316_2.00|M05349_2.00|M05356_2.00|M05444_2.00|M05477_2.00|M05482_2.00|M05483_2.00|M05491_2.00|M05501_2.00|M05503_2.00|M05504_2.00|M07976_2.00|M09139_2.00|M09144_2.00|M09151_2.00|M09176_2.00|M09179_2.00|M09191_2.00|M09200_2.00|M09219_2.00|M09220_2.00|M09222_2.00|M09227_2.00|M09228_2.00|M10652_2.00|M10665_2.00|M10690_2.00|M10691_2.00|M10693_2.00|M10704_2.00|M10717_2.00|M10741_2.00|M10759_2.00|M10767_2.00|M10771_2.00|M10784_2.00|M10788_2.00|M10823_2.00|M10826_2.00|M10827_2.00|M10829_2.00|M10835_2.00|M10843_2.00|M10848_2.00|M10849_2.00' \
-	| head -1 \
+	'POU3F3|PAX4|ZNF333|PAX3|POU3F1|POU2F2|ALX3|ALX4|ARX|BARHL2|BARX1|BSX|CART1|CDX1|CDX2|DLX1|DLX2|DLX3|DLX4|DLX5|DLX6|DBX1|DMBX1|DPRX|DRGX|DUXA|EMX1|EMX2|EN1|EN2|ESX1|EVX1|EVX2|GBX1|GBX2|GSC|GSC2|GSX1|GSX2|HESX1|HMBOX1|HMX1|HMX2|HMX3|HNF1A|HNF1B|HOXA1|HOXA10|HOXA13|HOXA2|HOXB13HOXB2|HOXB3|HOXB5|HOXC10|HOXC11|HOXC12|HOXC13|HOXD11|HOXD12|HOXD13|HOXD8|IRX2|IRX5|ISL2|ISX|LBX2|LHX2|LHX6|LHX9|LMX1A|LMX1B|MEOX1|MEOX2|MIXL1|MNX1|MSX1|MSX2|NKX2-3|NKX2-8|NKX3-1|NKX3-2|NKX6-1|NKX6-2|NOTO|OTX1|OTX2|PDX1|PHOX2A|PHOX2B|PITX1|PITX3|PROP1|PRRX1|PRRX2|RAX|RAXL1|RHOXF1|SHOX|SHOX2|UNCX|VAX1|VAX2|VENTX|VSX1|VSX2' \
+	"${Target}_4_homer_denovo_short"/homerResults.txt | head -1 \
 	> "${Target}_4_homer_denovo_short"/top_short.txt
 
 ## De novo motif analysis of cycle 3 long
@@ -150,7 +148,7 @@ echo "Starting de novo motif analysis for Cycle4-long"
 # -fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
 # -mcheck /data/weirauchlab/databank/appdata/HOMER/customizedTFs/v2.00/human_cisbp200.motif \
 # -noredun -len 16,18 -noknown
-rm "${Target}_${ZeroTag}_4.fa"
+# rm "${Target}_${ZeroTag}_4.fa"
 
 python ~/SELEX_analysis/code/htmltotext.py \
 	"${Target}_4_homer_denovo_long"/homerResults.html \
@@ -158,10 +156,10 @@ python ~/SELEX_analysis/code/htmltotext.py \
 
 
 ## Pull out top relevant long motif - searches for long homeodomain output
-grep -E \
-'M10736|M03191|M03264_2.00|M03846_2.00|M03216_2.00|M03244_2.00|M05430_2.00|M09586_2.00|M03269_2.00|M03273_2.00|M09181_2.00|M03181_2.00|M05360_2.00|M02187_2.00|M03076_2.00|M03104_2.00|M03107_2.00|M03109_2.00|M03116_2.00|M03127_2.00|M03144_2.00|M03150_2.00|M03155_2.00|M03159_2.00|M03162_2.00|M03170_2.00|M03184_2.00|M03188_2.00|M03197_2.00|M03246_2.00|M03249_2.00|M03255_2.00|M03260_2.00|M03288_2.00|M03300_2.00|M03302_2.00|M03304_2.00|M03310_2.00|M03311_2.00|M03790_2.00|M03792_2.00|M03807_2.00|M03819_2.00|M03821_2.00|M03828_2.00|M03864_2.00|M05120_2.00|M05121_2.00|M05233_2.00|M05234_2.00|M05235_2.00|M05236_2.00|M05315_2.00|M05316_2.00|M05349_2.00|M05356_2.00|M05444_2.00|M05477_2.00|M05482_2.00|M05483_2.00|M05491_2.00|M05501_2.00|M05503_2.00|M05504_2.00|M07976_2.00|M09139_2.00|M09144_2.00|M09151_2.00|M09176_2.00|M09179_2.00|M09191_2.00|M09200_2.00|M09219_2.00|M09220_2.00|M09222_2.00|M09227_2.00|M09228_2.00|M10652_2.00|M10665_2.00|M10690_2.00|M10691_2.00|M10693_2.00|M10704_2.00|M10717_2.00|M10741_2.00|M10759_2.00|M10767_2.00|M10771_2.00|M10784_2.00|M10788_2.00|M10823_2.00|M10826_2.00|M10827_2.00|M10829_2.00|M10835_2.00|M10843_2.00|M10848_2.00|M10849_2.00' \
-"${Target}_4_homer_denovo_long"/homerResults.txt | head -1 \
-> "${Target}_4_homer_denovo_long"/top_long.txt
+# grep -E \
+# 'M03787_2.00|M03244_2.00|M05430_2.00|M09586_2.00|M03269_2.00|M03273_2.00|M09181_2.00|M03181_2.00|M05360_2.00|M02187_2.00|M03076_2.00|M03104_2.00|M03107_2.00|M03109_2.00|M03116_2.00|M03127_2.00|M03144_2.00|M03150_2.00|M03155_2.00|M03159_2.00|M03162_2.00|M03170_2.00|M03184_2.00|M03188_2.00|M03197_2.00|M03246_2.00|M03249_2.00|M03255_2.00|M03260_2.00|M03288_2.00|M03300_2.00|M03302_2.00|M03304_2.00|M03310_2.00|M03311_2.00|M03790_2.00|M03792_2.00|M03807_2.00|M03819_2.00|M03821_2.00|M03828_2.00|M03864_2.00|M05120_2.00|M05121_2.00|M05233_2.00|M05234_2.00|M05235_2.00|M05236_2.00|M05315_2.00|M05316_2.00|M05349_2.00|M05356_2.00|M05444_2.00|M05477_2.00|M05482_2.00|M05483_2.00|M05491_2.00|M05501_2.00|M05503_2.00|M05504_2.00|M07976_2.00|M09139_2.00|M09144_2.00|M09151_2.00|M09176_2.00|M09179_2.00|M09191_2.00|M09200_2.00|M09219_2.00|M09220_2.00|M09222_2.00|M09227_2.00|M09228_2.00|M10652_2.00|M10665_2.00|M10690_2.00|M10691_2.00|M10693_2.00|M10704_2.00|M10717_2.00|M10741_2.00|M10759_2.00|M10767_2.00|M10771_2.00|M10784_2.00|M10788_2.00|M10823_2.00|M10826_2.00|M10827_2.00|M10829_2.00|M10835_2.00|M10843_2.00|M10848_2.00|M10849_2.00' \
+# "${Target}_4_homer_denovo_long"/homerResults.txt | head -1 \
+# > "${Target}_4_homer_denovo_long"/top_long.txt
 
 
 ## Copy relevant motifs to TF directory
@@ -205,7 +203,7 @@ do
 
 	## Remove fasta and fastq files - easy to redownload
 	rm "${Target}_${ZeroTag}_${Cycle}.fa"
-	rm "${Fastq_target[$Cycle]}"
+	#rm "${Fastq_target[$Cycle]}"
 done 
 
 rm ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa"

@@ -19,7 +19,7 @@ Bg_percent_mon = []; Bg_percent_dim = []
 Target_percent_mon = []
 Target_percent_dim = []
 notes = []
-Run_summary = '/users/cainu5/SELEX_analysis/Run_summary_110720_cycle4.txt'
+Run_summary = '/users/cainu5/SELEX_analysis/Run_summary_111120_cycle4.txt'
 
 ## Check if homer run finished
 homer_html = path+'/Cycle4/'+TF+'_'+'4_homer_denovo_long/homerResults.html'
@@ -54,7 +54,7 @@ for c in np.arange(1,5):
             else:
                 Consensus_seq_temp = line.split('-')[1]
                 Consensus_seq = Consensus_seq_temp.split(',')[0]
-                if i == 1: #len(Consensus_seq) < 10: 
+                if len(Consensus_seq) < 9: 
                     ## Check lengths - some motifs will not be found at each cycle
                     if len(Fold_change_mon) != int(c):
                         Fold_change_mon.append(0)
@@ -73,7 +73,7 @@ for c in np.arange(1,5):
                     Fold_change_mon.append(Fold_change)
                     
                                         
-                elif i == 2:                           
+                elif len(Consensus_seq) > 9:                           
                     ## Check lengths - some motifs will not be found at each cycle
                     if len(Fold_change_dim) != int(c):
                         Fold_change_dim.append(0)
