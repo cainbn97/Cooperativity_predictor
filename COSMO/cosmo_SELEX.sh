@@ -33,9 +33,9 @@ cd ~/SELEX_analysis/COSMO_output
 # fi
 
 ## Make necessary directories and download files
-# mkdir $TF; 
-# cd $TF
-# mkdir Cycle1; mkdir Cycle2; mkdir Cycle3; mkdir Cycle4
+#mkdir $TF; 
+cd $TF
+mkdir Cycle0; mkdir Cycle1; mkdir Cycle2; mkdir Cycle3; mkdir Cycle4
 
 ## Read sample accession of cycle 1 and extrapolate other cycle accessions
 SampAcc_Cycle1=$( echo "$Target_link" | cut -d / -f 5 | cut -d R -f 3 )
@@ -58,23 +58,20 @@ LINK4=$( echo $Target_link |\
 ZeroTag=$( echo $Zero_link | cut -d '_' -f 2 )
 
 cd ~/SELEX_analysis/COSMO_output/"$Target"
-# curl -flOJ "$Zero_link"
-# cd Cycle1; curl -flOJ "$Target_link"
-# cd ../Cycle2; curl -flOJ "$LINK2"
-# cd ../Cycle3; curl -flOJ "$LINK3"
-# cd ../Cycle4; curl -flOJ "$LINK4"
+cd Cycle0; curl -flOJ "$Zero_link"
+cd ../Cycle1; curl -flOJ "$Target_link"
+cd ../Cycle2; curl -flOJ "$LINK2"
+cd ../Cycle3; curl -flOJ "$LINK3"
+cd ../Cycle4; curl -flOJ "$LINK4"
 
 ## Grab downloaded fastq file names in a vector
-Rounds=(1 2 3 4)
+Rounds=(0 1 2 3 4)
 for Cycle in ${Rounds[@]}
 do
 	cd ~/SELEX_analysis/COSMO_output/"$Target"/"Cycle${Cycle}"
 	Fastq_target["$Cycle"]=$( ls *"${Cycle}.fastq.gz" )
 	echo "$Cycle" "${Fastq_target[@]}"
 done
-
-cd ~/SELEX_analysis/COSMO_output/"$TF"
-Fastq_bg=$( ls *0_0.fastq.gz )
 
 # check file integrities
 cd ~/SELEX_analysis/COSMO_output
@@ -89,26 +86,26 @@ do
 	fi
 done
 
-if gzip -t "$TF/${Fastq_bg}"
-then
-	echo ""
-else 
-	echo "Download of Zero tag file was unsuccessful"
-	exit 1
-fi
+# if gzip -t "$TF/${Fastq_bg}"
+# then
+	# echo ""
+# else 
+	# echo "Download of Zero tag file was unsuccessful"
+	# exit 1
+# fi
 
 
 #####################################
 ##       Determine matrices        ##
 #####################################
 
-module load python3
+# module load python3
 
-l_motif_number=$( cut -f 1 ~/SELEX_analysis/testing/"$Target"/"Cycle4"/"${Target}_4_homer_denovo_long"/top_long.txt )
-#mkdir "$TF"/motifs
+# l_motif_number=$( cut -f 1 ~/SELEX_analysis/testing/"$Target"/"Cycle4"/"${Target}_4_homer_denovo_long"/top_long.txt )
+# mkdir "$TF"/motifs
 
-cd ~/SELEX_analysis/testing/"$Target"
-python ~/SELEX_analysis/code/Consensus_sequence_search.py 
+# cd ~/SELEX_analysis/testing/"$Target"
+# python ~/SELEX_analysis/code/Consensus_sequence_search.py 
 
 module purge
 
@@ -119,20 +116,6 @@ module purge
 ## Activate virtual environment that contains MOODs
 cd ~/SELEX_analysis/COSMO/cosmo
 source ~/SELEX_analysis/COSMO/cosmo/venv/bin/activate
-
-## Convert fastq file to fasta file - Zero Cycle
-# echo "$Fastq_bg"
-# cd ~/SELEX_analysis/COSMO_output/"$Target"
-# zcat "$Fastq_bg" > "ZeroCycle.fastq"
-# paste - - - - < "ZeroCycle.fastq" | cut -f 1,2 |\
-	# sed 's/^@/>/' |	 tr "\t" "\n" |\
-	# awk 'NR %2 {print ">chr" (NR+1)/2 ":1-20"} NR %2-1 {print $0}'> "ZeroCycle.fa"	
-# rm "ZeroCycle.fastq"
-	
-# ## Run "background scan" - do not use scrambling option in COSMO
-# ~/SELEX_analysis/COSMO/cosmo/cosmo_v1.py -fa "ZeroCycle.fa" \
-	# -t $THRES -d $DIST -p motifs/
-# mv cosmo.counts.tab cosmo.counts.tab.1
 
 for Cycle in ${Rounds[@]}
 do 
@@ -151,10 +134,19 @@ do
 		-t $THRES -d $DIST -p ../motifs/
 	
 	## Move zero cycle and perform stats
-	cp ../cosmo.counts.tab.1 cosmo.counts.tab.1
-	~/SELEX_analysis/COSMO/cosmo/cosmostats_v1.py -N 1 > "${Target}_${Cycle}_stats.txt"
+	# cp ../Cycle0/cosmo.counts.tab.1 cosmo.counts.tab.1
+	# ~/SELEX_analysis/COSMO/cosmo/cosmostats_v1.py > "${Target}_${Cycle}_stats.txt"
+
+	## Organize output
+	grep "motif1.jpwm" cosmo.counts.tab | grep -v "motif2.jpwm" | grep "FF" > "Cycle${Cycle}_motif1_motif1_FF.tab"
+	grep "motif1.jpwm" cosmo.counts.tab | grep "motif2.jpwm" | grep "FF" > "Cycle${Cycle}_motif1_motif2_FF.tab"
+	grep "motif2.jpwm" cosmo.counts.tab | grep -v "motif1.jpwm" | grep "FF" > "Cycle${Cycle}_motif2_motif2_FF.tab"
 
 done	
 	
-	
+deactivate
+cd ..
+module load python3
+python ~/SELEX_analysis/code/COSMO/heatmap_plotter.py 
+
 
