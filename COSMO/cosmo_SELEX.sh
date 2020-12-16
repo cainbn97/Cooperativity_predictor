@@ -17,6 +17,7 @@ Target=$TF
 ## Bring in arguments for COSMO
 THRES=${4:?Expected motif threshold as argument #4}
 DIST=${5:?Expected max spacer length as argument #5}
+PWM_MODE=${6:?Expected PWM mode ( 1 == monomer motif, 2 == dimer motif) as argument #6}
 
 cd ~/SELEX_analysis/COSMO_output
 
@@ -93,13 +94,21 @@ done
 #####################################
 
 module load python3
-
-l_motif_number=$( cut -f 1 ~/SELEX_analysis/testing/"$Target"/"Cycle4"/"${Target}_4_homer_denovo_long"/top_long.txt )
 #mkdir "$TF"/motifs
-
 cd ~/SELEX_analysis/testing/"$Target"
-python ~/SELEX_analysis/code/Consensus_sequence_search.py 
 
+if [ "$PWM_MODE" -eq 2 ]
+then
+
+	python ~/SELEX_analysis/code/Consensus_sequence_search.py 
+
+elif [ "$PWM_MODE" -eq 1 ]
+then
+	
+	python ~/SELEX_analysis/code/COSMO/monomer_motif_trimmer.py --mon_length 6 \
+		--top
+
+fi
 module purge
 
 #####################################
@@ -112,6 +121,7 @@ source ~/SELEX_analysis/COSMO/cosmo/venv/bin/activate
 
 for Cycle in ${Rounds[@]}
 do 
+	echo "Starting cycle ${Cycle}"
 
 	## Convert fastq file to fasta file
 	cd ~/SELEX_analysis/COSMO_output/"$Target"/"Cycle${Cycle}"
@@ -123,8 +133,9 @@ do
 	rm "${Target}_${ZeroTag}_${Cycle}.fastq"
 
 	## Run foreground scan
-	~/SELEX_analysis/COSMO/cosmo/cosmo_v1.py -fa "${Target}_${ZeroTag}_${Cycle}.fa" \
-		-t $THRES -d $DIST -p ../motifs/
+	~/SELEX_analysis/COSMO/cosmo/cosmo_v1.py --fasta \
+		"${Target}_${ZeroTag}_${Cycle}.fa" \
+		--threshold $THRES --distance $DIST -p ../motifs/
 	
 	## Run 30 background scans
 	shuffle_count=($(seq 1 1 30))
