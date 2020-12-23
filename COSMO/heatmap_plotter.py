@@ -15,7 +15,8 @@ import matplotlib.pyplot as plt
 import glob
 import os
 
-TF = os.path.basename(os.getcwd())
+path = os.getcwd()
+TF = os.path.basename(path)
 orientation = ['motif1_motif1', 'motif1_motif2', 'motif2_motif2']
 cycle = []
 
@@ -50,3 +51,7 @@ for site_type in orientation:
     plt.title(TF + ' ' + site_type + ' Cosmo Output')
     fig = HeatMap.get_figure()
     fig.savefig(filename)
+    
+    output = path + '/' + TF + '_COSMO_counts_' + site_type + '.txt'
+    with open(output, 'w') as log:
+        log.write(matrix.to_string(index = True, header = True))

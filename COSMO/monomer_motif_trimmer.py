@@ -88,13 +88,12 @@ while Found_sites_scores == [] and kmer_length > 2:
     cut_nuc = 0
     nmatches = 0
     Sites = '[W|A|T]{'+str(kmer_length)+'}'
-    while len(seq) > kmer_length:
+    while len(seq) >= kmer_length:
         seq = seq_init[cut_nuc:]
         ## Search new frameshift for selected site
         for match in re.finditer(Sites,seq):
             nmatches +=1
             score = []
-            
             ## Score each AT rich site
             for m in np.arange(0,kmer_length):
                 
