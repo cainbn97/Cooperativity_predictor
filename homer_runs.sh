@@ -25,16 +25,16 @@ cd ~/SELEX_analysis/testing
 #####################################
 
 ## Check if folder already exists
-# if [ -d "$TF" ]
-# then
-	# echo "Have you run Homer for this dataset?"
-	# exit 1
-# fi
+if [ -d "$TF" ]
+then
+	echo "Have you run Homer for this dataset?"
+	exit 1
+fi
 
 ## Make necessary directories and download files
-#mkdir $TF; 
+mkdir $TF; 
 cd $TF
-#mkdir Cycle1; mkdir Cycle2; mkdir Cycle3; mkdir Cycle4
+mkdir Cycle1; mkdir Cycle2; mkdir Cycle3; mkdir Cycle4
 
 ## Read sample accession of cycle 1 and extrapolate other cycle accessions
 SampAcc_Cycle1=$( echo "$Target_link" | cut -d / -f 5 | cut -d R -f 3 )
@@ -126,10 +126,10 @@ rm "${Target}_${ZeroTag}_4.fastq"
 
 # De novo motif analysis of cycle 3 short
 echo "Starting de novo motif analysis for Cycle3-short"
-# findMotifs.pl "${Target}_${ZeroTag}_4.fa" fasta "${Target}_4_homer_denovo_short" \
-# -fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
-# -mcheck /data/weirauchlab/databank/appdata/HOMER/customizedTFs/v2.00/human_cisbp200.motif \
-# -noredun -len 6,8 -noknown
+findMotifs.pl "${Target}_${ZeroTag}_4.fa" fasta "${Target}_4_homer_denovo_short" \
+-fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
+-mcheck /data/weirauchlab/databank/appdata/HOMER/customizedTFs/v2.00/human_cisbp200.motif \
+-noredun -len 6,8 -noknown -p 4
 
 python ~/SELEX_analysis/code/htmltotext.py \
 	"${Target}_4_homer_denovo_short"/homerResults.html \
@@ -146,10 +146,10 @@ grep -E \
 
 ## De novo motif analysis of cycle 3 long
 echo "Starting de novo motif analysis for Cycle4-long"
-# findMotifs.pl "${Target}_${ZeroTag}_4.fa" fasta "${Target}_4_homer_denovo_long" \
-# -fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
-# -mcheck /data/weirauchlab/databank/appdata/HOMER/customizedTFs/v2.00/human_cisbp200.motif \
-# -noredun -len 16,18 -noknown
+findMotifs.pl "${Target}_${ZeroTag}_4.fa" fasta "${Target}_4_homer_denovo_long" \
+-fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" \
+-mcheck /data/weirauchlab/databank/appdata/HOMER/customizedTFs/v2.00/human_cisbp200.motif \
+-noredun -len 16,18 -noknown -p 4
 rm "${Target}_${ZeroTag}_4.fa"
 
 python ~/SELEX_analysis/code/htmltotext.py \
@@ -195,7 +195,7 @@ do
 	echo "Beginning short motif homer run for cycle $Cycle"
 	findMotifs.pl "${Target}_${ZeroTag}_${Cycle}.fa" fasta "${Target}_${Cycle}_homer" \
 	-fasta ~/SELEX_analysis/testing/"${ZeroTag}"/"${ZeroTag}.fa" -nomotif \
-	-mknown ~/SELEX_analysis/testing/"$Target"/"Cycle4.motif" -noweight
+	-mknown ~/SELEX_analysis/testing/"$Target"/"Cycle4.motif" -noweight -p 4
 
 	## Convert knownResults.html to text file
 	python ~/SELEX_analysis/code/htmltotext.py \

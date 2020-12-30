@@ -17,7 +17,7 @@ import os
 
 path = os.getcwd()
 TF = os.path.basename(path)
-orientation = ['motif1_motif1', 'motif1_motif2', 'motif2_motif2']
+orientation = ['motif1_motif1', 'motif1_motif2', 'motif2_motif2','motif2_motif1']
 cycle = []
 
 for site_type in orientation:
