@@ -4,9 +4,9 @@
 # COSMO runs for SELEX data
 # 12/10/20
 
-# (( TRACE )) && set -x
-# set -euo pipefail
-# trap 'Something went wrong. Script error on line #$LINENO."' ERR
+(( TRACE )) && set -x
+set -euo pipefail
+trap 'Something went wrong. Script error on line #$LINENO."' ERR
 
 ## Bring in arguments for file download
 TF=${1:?Expected target file as argument #1}
@@ -128,7 +128,7 @@ do
 	zcat "${Fastq_target[$Cycle]}" > "${Target}_${ZeroTag}_${Cycle}.fastq"
 	paste - - - - < "${Target}_${ZeroTag}_${Cycle}.fastq" | cut -f 1,2 |\
 		sed 's/^@/>/' |	 tr "\t" "\n" | \
-		awk 'NR %2 {print ">chr" (NR+1)/2 ":1-20"} NR %2-1 {print $0}' \
+		awk 'NR %2 {print ">chr" (NR+1)/2 ":1-30"} NR %2-1 {print $0}' \
 		> "${Target}_${ZeroTag}_${Cycle}.fa"	
 	rm "${Target}_${ZeroTag}_${Cycle}.fastq"
 	
@@ -159,6 +159,7 @@ do
 	grep "motif1.jpwm|motif2.jpwm|FF" cosmo.counts.tab > "Cycle${Cycle}_motif1_motif2_FF.tab"
 	grep "motif2.jpwm|motif1.jpwm|FF" cosmo.counts.tab > "Cycle${Cycle}_motif2_motif1_FF.tab"
 
+	rm *.fa
 done	
 
 
@@ -172,7 +173,6 @@ module load R
 Rscript ~/SELEX_analysis/code/COSMO/chi-square.R
 
 rm */*.fastq.gz
-rm */*.fa
 
 
 

@@ -103,10 +103,14 @@ if top_site['Start'] < top_site2['Start']:
     ## top site is first site
     Spacer = top_site2['Start'] - top_site['End'] - 1
     dimer_site = top_site['Seq'] + str(Spacer) + 'N' + top_site2['Seq']
+    motif1 = top_site
+    motif2 = top_site2
 elif top_site['Start'] > top_site2['Start']:
     ## top2 site is first site
     Spacer = top_site['Start'] - top_site2['End'] - 1
     dimer_site = top_site2['Seq'] + str(Spacer) + 'N' + top_site['Seq']
+    motif1 = top_site2
+    motif2 = top_site
 
 if Spacer < 0:
     dimer_site = 'NA'
@@ -119,10 +123,10 @@ with open(export_path,'w') as log:
 # ## For COSMO runs
 
 ## Index top sites from motif file
-motif1 = motif.loc[top_site['Start']:top_site['End']]*100
+motif1 = motif.loc[motif1['Start']:motif1['End']]*100
 motif1 = motif1.transpose()
 
-motif2 = motif.loc[top_site2['Start']:top_site2['End']]*100
+motif2 = motif.loc[motif2['Start']:motif2['End']]*100
 motif2 = motif2.transpose()
 
 TF = os.path.basename(path)
