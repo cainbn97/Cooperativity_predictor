@@ -2,10 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Heatmap plotter for COSMO output
-
 cainu5
 12/12/20
-
 """
 
 import pandas as pd
@@ -21,6 +19,7 @@ orientation = ['motif1_motif1', 'motif1_motif2', 'motif2_motif2','motif2_motif1'
 cycle = []
 
 for site_type in orientation:
+    print(site_type)
     files = '*/*' + site_type + '_FF.tab'
     print(files)
     matrix = pd.DataFrame(0, index=np.arange(5), columns = np.arange(1,11))
@@ -41,6 +40,11 @@ for site_type in orientation:
     ## Convert NaNs to zeros in case there are missing values
     matrix = matrix.fillna(0)
     print(matrix)
+    
+    ## Check if matrix is all zeros
+    if matrix.equals(pd.DataFrame(0, index=np.arange(5), columns = np.arange(1,11))):
+        print('No count information at ', site_type,'.')
+        continue
     
     
     ## heatmap plotting

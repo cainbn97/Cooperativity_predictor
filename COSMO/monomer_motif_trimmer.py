@@ -49,6 +49,7 @@ else:
 c = 0
 motif_final = []
 path = os.getcwd()
+TF = os.path.basename(path)
 motif_file = path + '/*_short.motif'
 
 ## Read in motif
@@ -87,7 +88,7 @@ cut_nuc = 0
 while Found_sites_scores == [] and kmer_length > 2:
     cut_nuc = 0
     nmatches = 0
-    Sites = '[W|A|T]{'+str(kmer_length)+'}'
+    Sites = '.{'+str(kmer_length)+'}'
     while len(seq) >= kmer_length:
         seq = seq_init[cut_nuc:]
         ## Search new frameshift for selected site
@@ -151,7 +152,11 @@ motif1 = motif.loc[(top_site['Start']-l_flank):(top_site['End']+r_flank)]*100
 motif1 = motif1.transpose()
 print(motif1)
 
+## Export found motif and consensus monomer sequence
 TF = os.path.basename(path)
 export_path_COSMO = '/users/cainu5/SELEX_analysis/COSMO_output/' + TF + '/motifs/'
-with open(export_path_COSMO + 'monomer_motif.jpwm','w') as log:
+with open(export_path_COSMO + 'motif1.jpwm','w') as log:
     log.write(motif1.to_string(index = False, header = False))
+    
+with open(path + '/monomer_site.txt','w') as log:
+    log.write(top_site['Seq'])
