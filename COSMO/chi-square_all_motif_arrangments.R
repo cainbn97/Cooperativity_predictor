@@ -9,6 +9,7 @@
 
 library("chisq.posthoc.test", lib.loc = "/users/cainu5/Rpackages")
 library("readr")
+library("outliers")
 
 ## Create an error traceback
 options(error=traceback)
@@ -30,18 +31,22 @@ motif1 = substr(long_consensus,1,4); print(motif1, quote = FALSE)
 
 ## print TF information
 COSMO_output_file = "/users/cainu5/SELEX_analysis/COSMO_output/COSMO_run_summary_all_motif_arrangments_0.8.txt"
-sink(COSMO_output_file, append = TRUE)
-cat(paste(TF, motif1, sep = "\t"))
-sink()
+#sink(COSMO_output_file, append = TRUE)
+#cat(paste(TF, motif1, sep = "\t"))
+#sink()
 
 for ( f in 1:length(file_list))
 	{
 	print(file_list[f], quote = FALSE)
 	
+	### CHI-SQUARE TEST FOR DISPROPORTIONAL SPACER LENGTHS BETWEEN 0 AND 4 ###
+	
 	## parse motif arrangment from file name
 	split_string = unlist(strsplit(file_list[f],"_"))
 	slot_1 = split_string[4]
 	slot_2 = unlist(strsplit(split_string[5],".txt"))[1]
+	orientation = unlist(strsplit(split_string[6],".txt"))[1]
+	
 		
 	## Parse matrix from heatmap script
 	counts = read.table(file_list[f], sep = "")
@@ -74,25 +79,42 @@ for ( f in 1:length(file_list))
 	{
 		if ( Cycle0_4_norm["0",j] > Cycle0_4_norm["4",j] )
 		{ 
-			print('here')
 			chi_spac_bon[j] = '-'
 		}
 	}
 	print(Cycle0_4_norm)
 	chi_min_bon = chi_spac_bon[which(chi_spac_bon < 0.05)]
-	print(chi_min_bon)
-
+	
+	########## grubbs test for outliers of Cycle 4 distribution ###############
+	
+	## plot quartile-quartile plto
+	name = paste(TF,' ', orientation, '_Cycle_4_Quantile-Quantile_plot.png', sep = "")
+	Title = paste(TF,' ', orientation, ' Cycle 4 Quantile-Quantile plot', sep = "")
+	png(filename = name)
+	p = qqnorm(Cycle0_4["4",], main= Title, 
+		xlab = "Theoretical quantiles", ylab = "Sample quantiles",
+		plot.it = TRUE)
+	print(p)
+	dev.off()
+	
+	## run grubbs test
+	grubbs_result = grubbs.test(as.numeric(Cycle0_4["4",]), type = 10, opposite = FALSE)
+	G = grubbs_result$statistic["G"]
+	U = grubbs_result$statistic["U"]
+	p_grubbs = grubbs_result$p.value
+	alt = grubbs_result$alternative
+	top_spac = parse_number(colnames(Cycle0_4["4",][which(Cycle0_4["4",] == parse_number(alt))]))
+	
 	## Write data to file
 	sink(COSMO_output_file, append = TRUE)
 	cat("\t")
-	cat(paste(slot_1, slot_2, sep = "\t"))
+	cat(paste(TF, motif1, slot_1, slot_2, orientation, round(p_grubbs,4), top_spac, sep = "\t"))
 	for ( i in 1:length(chi_spac_bon) )
 		{
 		cat("\t")
-		# cat(colnames(chi_min_bon)[i], sep = "\t")
-		cat(unlist(chi_spac_bon[i]), sep="\t")
+		cat(unlist(chi_spac_bon[i],3), sep="\t")
 		}
-	cat("\t")
+	cat("\n")
 	sink()
 
 	}

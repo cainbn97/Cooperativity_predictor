@@ -4,9 +4,9 @@
 # COSMO runs for SELEX data
 # 12/10/20
 
-(( TRACE )) && set -x
-set -euo pipefail
-trap 'Something went wrong. Script error on line #$LINENO."' ERR
+# (( TRACE )) && set -x
+# set -euo pipefail
+# trap 'Something went wrong. Script error on line #$LINENO."' ERR
 
 ## Bring in arguments for file download
 TF=${1:?Expected target file as argument #1}
@@ -169,8 +169,18 @@ cd ..
 module load python3
 python ~/SELEX_analysis/code/COSMO/heatmap_plotter.py 
 
+
+## Perform statistical analysis
 module load R
-Rscript ~/SELEX_analysis/code/COSMO/chi-square.R
+if [ "$PWM_MODE" -eq 2 ]
+then
+	Rscript ~/SELEX_analysis/code/COSMO/chi-square.R
+
+elif [ "$PWM_MODE" -eq 1 ]
+then	
+	Rscript ~/SELEX_analysis/code/COSMO/chi-square_all_motif_arrangments.R
+fi
+
 
 rm */*.fastq.gz
 

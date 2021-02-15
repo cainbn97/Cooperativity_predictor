@@ -8,6 +8,7 @@
 
 library("chisq.posthoc.test", lib.loc = "/users/cainu5/Rpackages")
 library("readr")
+library("outliers")
 
 ## Create an error traceback
 options(error=traceback)
@@ -57,6 +58,14 @@ print(chi_pair)
 chi_spac_bon = subset(chi_pair_bon, ( chi_pair$Value == "p values" & chi_pair$Dimension == 0 ))[Column]
 chi_spac = subset(chi_pair, ( chi_pair$Value == "p values" & chi_pair$Dimension == 0 ))[Column]
 
+## run grubbs test
+grubbs_result = grubbs.test(as.numeric(Cycle0_4["4",]), type = 10, opposite = FALSE)
+G = grubbs_result$statistic["G"]
+U = grubbs_result$statistic["U"]
+p_grubbs = grubbs_result$p.value
+alt = grubbs_result$alternative
+top_spac = parse_number(colnames(Cycle0_4["4",][which(Cycle0_4["4",] == parse_number(alt))]))
+
 ## Read in statistics file and print out relevant p-value
 stat_file = list.files(pattern ='_stats.txt')
 stats = read.table(paste('Cycle4/',TF,'_4_stats.txt',sep = ""), sep = "\t", skip = 1, header = TRUE)
@@ -65,9 +74,9 @@ COSMO_zstats = subset(stats, ( stats$TF1.TF2..F.R..D == spac_orient_p))[2:7]
 p_spac = subset(stats, ( stats$TF1.TF2..F.R..D == spac_orient_p))[8]
 
 ## Write data to file
-COSMO_output_file = "/users/cainu5/SELEX_analysis/COSMO_output/COSMO_run_summary.txt"
+COSMO_output_file = "/users/cainu5/SELEX_analysis/COSMO_output/COSMO_run_summary_wgrubbs.txt"
 sink(COSMO_output_file, append = TRUE)
-cat(paste(TF, long_consensus, chi_spac, chi_spac_bon, p_spac, sep = "\t"))
+cat(paste(TF, long_consensus, chi_spac, chi_spac_bon, round(p_grubbs,4), top_spac, p_spac, sep = "\t"))
 cat("\t")
 cat(unlist(COSMO_zstats),sep = "\t")
 for ( i in c("0","1","2","3","4") )

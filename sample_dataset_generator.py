@@ -76,7 +76,7 @@ print('File will contain ' + str(Seq_dim) + ' dimer sites')
 print('Dimer sites have a spacer of ' + str(Spacer) + ' bp')
 print('Each strand will be ' + str(Seq_len) + ' bp')
 
-monomer_sites = ['TAAT','ATTA']
+monomer_sites = ['TAAT']
 
 with open('temp.fa', 'w') as fastq:
     ## Write monomer sites dispersed in random sequences
