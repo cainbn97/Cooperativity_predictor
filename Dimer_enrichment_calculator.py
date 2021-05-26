@@ -7,6 +7,8 @@ Dimer enrichment script
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import scipy.optimize as opt
+from scipy.interpolate import interp1d
 
 ## Grab working directory
 path = os.getcwd()
@@ -19,7 +21,7 @@ Bg_percent_mon = []; Bg_percent_dim = []
 Target_percent_mon = []
 Target_percent_dim = []
 notes = []
-Run_summary = '/users/cainu5/SELEX_analysis/Run_summary_111120_cycle4.txt'
+Run_summary = '/users/cainu5/SELEX_analysis/Run_fitting_tests.txt'
 
 ## Check if homer run finished
 homer_html = path+'/Cycle4/'+TF+'_'+'4_homer_denovo_long/homerResults.html'
@@ -98,23 +100,23 @@ for c in np.arange(1,5):
                 
 
 ## Check for possible oversaturation - remove fourth cycle               
-if Target_percent_mon[-2] > 50:
-    notes.append('Cycle 4 monomer fold change ('+str(round(Fold_change_mon[-1],2))+') masked to avoid saturation')
-    Fold_change_mon[-1] = 0
+# if Target_percent_mon[-2] > 50:
+    # notes.append('Cycle 4 monomer fold change ('+str(round(Fold_change_mon[-1],2))+') masked to avoid saturation')
+    # Fold_change_mon[-1] = 0
 
-if Target_percent_dim[-2] > 50:
-    notes.append('Cycle 4 dimer fold change ('+str(round(Fold_change_dim[-1],2))+') masked to avoid saturation')
-    Fold_change_dim[-1] = 0
+# if Target_percent_dim[-2] > 50:
+    # notes.append('Cycle 4 dimer fold change ('+str(round(Fold_change_dim[-1],2))+') masked to avoid saturation')
+    # Fold_change_dim[-1] = 0
 
 ## Check for prevalence of dimer site at cycle 3 - where de novo motif found
 if Target_percent_dim[-2] < 1:
     ## Write to log
     dimer_site = 'N/A'
-    Cooperative = 0
+    CF = 0
     notes.append('Dimer motif at Cycle 3 had an enrichment of <1%.')
     print('Dimer prevalence less than 1% - exiting')
     with open(Run_summary,'a') as log:
-        log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
+        log.write(TF+'\t'+ str(dimer_site)+'\t'+str(CF) + 
         '\t'+str(Consensus_seq_dim)+'\t'+''+'\t'''+
         '\t'+str(Consensus_seq_mon)+'\t'+''+'\t'+''+'\t'+''+'\t'+str(notes)+
         '\n')
@@ -124,66 +126,83 @@ if Target_percent_dim[-2] < 1:
 cy = np.arange(0,5)
 Fold_change_mon = np.array(Fold_change_mon)
 Fold_change_dim = np.array(Fold_change_dim)
+print(Fold_change_mon); print(Fold_change_dim)
 
 ## Mask 0s (where homer did not find a result)
 mask_mon = (Fold_change_mon != 0)
 mask_dim = (Fold_change_dim != 0)
 
-## Natural log transform
 cy_mon = cy[mask_mon]
-Fold_change_mon = np.log(Fold_change_mon[mask_mon])
-
 cy_dim = cy[mask_dim]
-Fold_change_dim = np.log(Fold_change_dim[mask_dim])
 
-## Fit lines
-fit_mon = np.polyfit(cy_mon, Fold_change_mon, 1)
-slope_mon = fit_mon[0]
-yint_mon = fit_mon[1]
+if max(Fold_change_mon) > max(Fold_change_dim):
+    Max = max(Fold_change_mon)
+else:
+    Max = max(Fold_change_dim)
 
-fit_dim = np.polyfit(cy_dim, Fold_change_dim, 1)
-slope_dim = fit_dim[0]
-yint_dim = fit_dim[1]
+## Plot non-transformed data
+plt.plot(cy_mon, Fold_change_mon[mask_mon],'ro', 
+    cy_dim, Fold_change_dim[mask_dim], 'bo')
+M, = plt.plot(cy_mon, Fold_change_mon,'ro')
+D, = plt.plot(cy_dim, Fold_change_dim,'bo')
+plt.xlabel('Cycle')
+plt.ylabel('Fold change')
+plot_title = TF + ' SELEX Enrichment'
+plt.title(plot_title)
+plt.axis([-0.25, 4.5, 0, Max + 50])
+plt.legend([M, D] , ['Monomer', 'Dimer'])
+filename = TF+'_Enrichment_plot.png'
+plt.savefig(filename)
+
+
+#######     Fit to LogIt Function       #########
+
+## Interpolate more points so logit can be fit
+cy_int = np.linspace(0,4,num = 100, endpoint = True)
+mon_int = interp1d(cy_mon, Fold_change_mon, 'cubic')
+dim_int = interp1d(cy_dim, Fold_change_dim, 'cubic')
+
+## Define logit function
+def f( x, L, k, x0):
+    return L/(1 + np.exp(-k * (x-x0)))
+
+
+(LM, kM, x0M), _ = opt.curve_fit(f, cy_int, mon_int(cy_int))
+(LD, kD, x0D), _ = opt.curve_fit(f, cy_int, dim_int(cy_int), 
+    p0 = [max(dim_int(cy_int)),1,1])
+
+# Plot logIt function
+fit_mon = f(cy_int, LM, kM, x0M)
+fit_dim = f(cy_int, LD, kD, x0D)
+M, = plt.plot(cy_mon, Fold_change_mon,'ro')
+D, = plt.plot(cy_dim, Fold_change_dim,'bo')
+M_fit, = plt.plot(cy_int, fit_mon, 'r:')
+D_fit, = plt.plot(cy_int, fit_dim, 'b:')
+plt.xlabel('Cycle')
+plt.ylabel('Fold change')
+plot_title = TF + ' SELEX Enrichment'
+plt.title(plot_title)
+plt.axis([-0.25, 4.5, 0, Max + 50])
+plt.legend([M, D, M_fit, D_fit] , 
+    ['Monomer', 'Dimer', f'Monomer Logistic Fit: k = {round(kM,3)}', f'Dimer Logistic Fit: k = {round(kD,3)}'])
+filename = TF+'_LogIt_Enrichment_plot.png'
+plt.savefig(filename)
+
+CF = kD/kM
 
 ## Calculate Rsquared
 RSS_mon = 0; TSS_mon = 0; RSS_dim = 0; TSS_dim = 0
 for i in range(0,len(Fold_change_mon)):
-    RSS_mon += (Fold_change_mon[i] - (cy_mon[i]*slope_mon + yint_mon))**2
+    RSS_mon += (Fold_change_mon[i] - (f(cy_mon[i], LM, kM, x0M)))**2
     TSS_mon += (Fold_change_mon[i] - sum(Fold_change_mon)/len(Fold_change_mon))**2
 for i in range(0,len(Fold_change_dim)):
-    RSS_dim += (Fold_change_dim[i] - (cy_dim[i]*slope_dim + yint_dim))**2
+    RSS_dim += (Fold_change_dim[i] - (f(cy_dim[i], LD, kD, x0D)))**2
     TSS_dim += (Fold_change_dim[i] - sum(Fold_change_dim)/len(Fold_change_dim))**2   
 R2_mon = 1 - (RSS_mon/TSS_mon)
 R2_dim = 1 - (RSS_dim/TSS_dim)
 
-## Assess cooperativity - NEEDS THRESHOLD
-if slope_dim > slope_mon:
-    print('Dimer had higher enrichment than monomer.')
-
-Cooperative = round(slope_dim/slope_mon,2)
-
-## Plot natural log transformed curves
-if Fold_change_mon[-1] > Fold_change_dim[-1]:
-    Max = Fold_change_mon[-1]
-else:
-    Max = Fold_change_dim[-1]
-
-plt.plot(cy_mon, Fold_change_mon,'ro', 
-    cy_dim, Fold_change_dim, 'bo',
-    cy, cy*slope_mon+ yint_mon, 'r:',
-    cy, cy*slope_dim + yint_dim, 'b:')
-M, = plt.plot(cy_mon, Fold_change_mon,'ro')
-D, = plt.plot(cy_dim, Fold_change_dim,'bo')
-plt.xlabel('Cycle')
-plt.ylabel('ln(Fold change)')
-plot_title = TF + ' SELEX Enrichment'
-plt.title(plot_title)
-plt.axis([-0.25, 4.5, 0, Max + 1])
-plt.legend([M, D] , ['Monomer', 'Dimer'])
-filename = TF+'_NatLog_2_Enrichment_plot.png'
-plt.savefig(filename)
-
-## Read dimer sequence from consensus sequence search
+#####     Write to log          #####
+# Read dimer sequence from consensus sequence search
 long_consensus_path = path + '/long_motif_consensus.txt'
 with open(long_consensus_path, 'r') as dimer:
     for line in dimer:
@@ -191,7 +210,7 @@ with open(long_consensus_path, 'r') as dimer:
 
 ## Write to log
 with open(Run_summary,'a') as log:
-    log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
-    '\t'+str(Consensus_seq_dim)+'\t'+str(round(slope_dim,2))+'\t'+str(round(R2_dim,4))+
-    '\t'+str(Consensus_seq_mon)+'\t'+str(round(slope_mon,2))+'\t'+str(round(R2_mon,4))+
+    log.write(TF+'\t'+ str(dimer_site)+'\t'+ str(round(CF,3)) + 
+    '\t'+str(Consensus_seq_dim)+'\t'+str(round(kD,2))+'\t'+str(round(R2_dim,4))+
+    '\t'+str(Consensus_seq_mon)+'\t'+str(round(kM,2))+'\t'+str(round(R2_mon,4))+
     '\t'+str(np.round(Fold_change_mon,2))+'\t'+str(np.round(Fold_change_dim,2))+'\t'+str(notes)+'\n')
