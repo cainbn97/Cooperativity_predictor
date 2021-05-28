@@ -21,7 +21,7 @@ Cycle0_4 = counts[c("0","4"),]
 
 ## Read in long_consensus sequence from SELEX datasets
 TF = basename(getwd())
-consensus_path = paste("/users/cainu5/SELEX_analysis/testing/",TF,"/long_motif_consensus.txt", sep = "")
+consensus_path = paste(getwd(),"/long_motif_consensus.txt", sep = "")
 
 ## Grab spacer value from string
 long_consensus = read_file(consensus_path)
@@ -47,6 +47,7 @@ for ( j in 1:dim(counts)[2] )
 ## Perform chi-square
 chi_tot = chisq.test(Cycle0_4_norm, y = NULL, rescale.p = TRUE)
 print(chi_tot)
+chi_tot_pvalue = chi_tot$p.value
 
 ## Perform post-hoc
 chi_pair_bon = chisq.posthoc.test(Cycle0_4_norm, method = "bonferroni")
@@ -74,9 +75,11 @@ COSMO_zstats = subset(stats, ( stats$TF1.TF2..F.R..D == spac_orient_p))[2:7]
 p_spac = subset(stats, ( stats$TF1.TF2..F.R..D == spac_orient_p))[8]
 
 ## Write data to file
-COSMO_output_file = "/users/cainu5/SELEX_analysis/COSMO_output/COSMO_run_summary_wgrubbs.txt"
+COSMO_output_file = paste(getwd(),'/',TF,'_COSMO_run_summary_wgrubbs.txt', sep = "")
 sink(COSMO_output_file, append = TRUE)
-cat(paste(TF, long_consensus, chi_spac, chi_spac_bon, round(p_grubbs,4), top_spac, p_spac, sep = "\t"))
+cat(paste('TF','Dimer site','Chi-square', 'Chi-square post hoc no correction', 'Chi-square post hoc bonferroni correction', 'Grubbs test', 'Top spacer found', 'Z-test result (p)', sep = "\t"))
+cat("\n")
+cat(paste(TF, long_consensus, round(chi_tot_pvalue,4) , chi_spac, chi_spac_bon, round(p_grubbs,4), top_spac, p_spac, sep = "\t"))
 cat("\t")
 cat(unlist(COSMO_zstats),sep = "\t")
 for ( i in c("0","1","2","3","4") )

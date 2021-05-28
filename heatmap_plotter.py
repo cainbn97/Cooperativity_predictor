@@ -28,7 +28,6 @@ for site_type in orientation:
         
         ## Create matrix of counts
         for file in sorted(glob.glob(files)):
-            print(file)
             cycle.append(file.split('/')[0])
             with open(file, 'r') as readfile:
                 for line in readfile: 
@@ -42,7 +41,7 @@ for site_type in orientation:
         
         ## Check if matrix is all zeros
         if matrix.equals(pd.DataFrame(0, index=np.arange(5), columns = np.arange(1,11))):
-            print('No count information at ', site_type,'.')
+            print(' No count information at ', site_type)
             continue
         
         
