@@ -29,20 +29,16 @@ Run_summary = path + '/' + TF + '_Enrichment_analysis_run_summary.txt'
 ## Check if homer run finished
 homer_html = path+'/Cycle4/'+TF+'_'+'4_homer_denovo_long/homerResults.html'
 
-if os.path.exists(homer_html) == False:
-    with open(Run_summary,'a') as log:
-        log.write(TF+'\tRun did not finish within 24 hours\n')
-    print('Run did not complete.')
-    exit()
-
 # Check if long motif was found
-file_top_long = path + '/dimer.motif'
+file_top_long = path + '/long_motif_consensus.txt'
 
-if os.stat(file_top_long).st_size == 0:
-    with open(Run_summary,'a') as log:
-        log.write(TF+'\t'+'No long motif found'+'\n')
-    print('No long motif found. Exiting')
-    exit()
+with open(file_top_long,'r') as long_consensus:
+    for line in long_consensus:
+        if line == 'N/A':        
+            with open(Run_summary,'a') as log:
+                log.write(TF+'\t'+'No long motif found'+'\n')
+            print('No long motif found. Exiting')
+            exit()
 
 print('Starting monomer parsing...')
 for c in np.arange(1,5):
@@ -111,23 +107,22 @@ for c in np.arange(1,5):
                 
                 Fold_change_dim.append(Fold_change)
                 
-
 ## Check for possible oversaturation - remove fourth cycle               
-# if Target_percent_mon[-2] > 50:
-    # notes.append('Cycle 4 monomer fold change ('+str(round(Fold_change_mon[-1],2))+') masked to avoid saturation')
-    # Fold_change_mon[-1] = 0
+if Target_percent_mon[-2] > 50:
+    notes.append('Cycle 4 monomer fold change ('+str(round(Fold_change_mon[-1],2))+') masked to avoid saturation')
+    Fold_change_mon[-1] = 0
 
-# if Target_percent_dim[-2] > 50:
-    # notes.append('Cycle 4 dimer fold change ('+str(round(Fold_change_dim[-1],2))+') masked to avoid saturation')
-    # Fold_change_dim[-1] = 0
+if Target_percent_dim[-2] > 50:
+    notes.append('Cycle 4 dimer fold change ('+str(round(Fold_change_dim[-1],2))+') masked to avoid saturation')
+    Fold_change_dim[-1] = 0
 
 ## Check for prevalence of dimer site at cycle 3 - where de novo motif found
-if Target_percent_dim[-2] < 1:
+if Target_percent_dim[-1] < 5:
     ## Write to log
     dimer_site = 'N/A'
     Cooperative = 0
-    notes.append('Dimer motif at Cycle 3 had an enrichment of <1%.')
-    print('Dimer prevalence less than 1% - exiting')
+    notes.append('Dimer motif at Cycle 4 had an enrichment of <5%.')
+    print('Dimer prevalence less than 5% - exiting')
     with open(Run_summary,'a') as log:
         log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
         '\t'+str(Consensus_seq_dim)+'\t'+''+'\t'''+

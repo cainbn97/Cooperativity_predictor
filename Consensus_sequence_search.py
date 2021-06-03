@@ -22,7 +22,7 @@ args = parser.parse_args()
 COSMO = bool(args.COSMO)
 
 Site_length = 4
-Top2SpacThres = 1.5
+Top2SpacThres = 1.6
 
 ## Find and save necessary folders/paths
 path = os.getcwd()
@@ -73,6 +73,7 @@ for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
     Found_sites_scores_df = pd.DataFrame(Found_sites_scores, 
         columns = ['Seq','Start','End','Score'], index = np.arange(0,len(seq)+1-Site_length))
     Found_sites_scores_df = Found_sites_scores_df.drop_duplicates()
+    print(Found_sites_scores_df)
 
     ## Find top site
     top_site = Found_sites_scores_df.loc[Found_sites_scores_df.loc[:,'Score'].idxmax(axis = 'columns')]
@@ -100,10 +101,10 @@ for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
     
     Top_sites_score = (top_site['Score'] + top_site2['Score'])/2
     Other_scores = Max_bp.sum(axis = 0) / Max_bp.shape[0]
-
+    print(Top_sites_score/Other_scores)
     if Top_sites_score > Other_scores * Top2SpacThres:
         D_site_found = True
-        export_path = path + '/Cycle4/GSX2_4_homer_denovo_long/D_site_motif.txt'
+        export_path = path + '/Cycle4/' + TF + '_4_homer_denovo_long/D_site_motif.txt'
         with open(export_path, 'w') as log:
             log.write(os.path.basename(de_novo_motifs))
         break
@@ -141,8 +142,12 @@ if ( COSMO == True and D_site_found == True ):
     motif2 = motif.loc[motif2['Start']:motif2['End']]*100
     motif2 = motif2.transpose()
 
-    os.mkdir('top_dimer_kmer_motifs')
     export_path_COSMO = path + '/top_dimer_kmer_motifs/'
+    if os.path.isdir(export_path_COSMO) == True:
+        os.remove(export_path_COSMO + 'motif1.jpwm')
+        os.remove(export_path_COSMO + 'motif2.jpwm')
+        os.rmdir(export_path_COSMO)
+    os.mkdir(path + '/top_dimer_kmer_motifs/')
     with open(export_path_COSMO + 'motif1.jpwm','w') as log:
         log.write(motif1.to_string(index = False, header = False))
     with open(export_path_COSMO + 'motif2.jpwm','w') as log:

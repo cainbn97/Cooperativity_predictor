@@ -68,6 +68,15 @@ then
 	hflag=true
 fi
 
+## Check for de novo motif analyses if -h not given
+if [ "$hflag" != "true" ] && [ -e "$TF"/Cycle4/"$TF"_4_homer_denovo_long/homerResults.txt ]
+then
+	echo ""
+else
+	echo "	Cannot find a previous de novo motif analysis. Will run HOMER de novo"
+	hflag=true
+fi
+
 #####################################
 ## ACQUIRE FASTQ FROM ENA DATABASE ##
 #####################################
@@ -106,10 +115,10 @@ else
 
 
 	cd "$BASEDIR"/"$TF"
-	cd Cycle1; curl -flOJ "$Target_link"
-	cd ../Cycle2; curl -flOJ "$LINK2"
-	cd ../Cycle3; curl -flOJ "$LINK3"
-	cd ../Cycle4; curl -flOJ "$LINK4"
+	cd Cycle1; wget -nv "$Target_link"
+	cd ../Cycle2; wget -nv "$LINK2"
+	cd ../Cycle3; wget -nv "$LINK3"
+	cd ../Cycle4; wget -nv "$LINK4"
 
 fi
 
@@ -138,14 +147,13 @@ done
 ## Download cycle 0 file if necessary
 cd "$BASEDIR"
 ZeroTag=$( echo $Zero_link | cut -d '_' -f 2 )
-cd "$BASEDIR"
 
 if [ -e */"ZeroCycle_${ZeroTag}_0_0.fastq.gz" ]
 then
 	echo ""
 else
 	mkdir "$ZeroTag"; cd "$ZeroTag"
-	curl -flOJ "$Zero_link"
+	wget -nv "$Zero_link"
 fi
 
 cd "$BASEDIR"/"$ZeroTag"
@@ -186,9 +194,9 @@ then
 
 	## De novo motif analysis of cycle 4 short
 	echo "	Starting de novo motif analysis for Cycle3 for 6-8 bp sequences"
-	findMotifs.pl "${TF}_${ZeroTag}_4.fa" fasta "${TF}_4_homer_denovo_short" \
-	-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" \
-	-noredun -len 6,8 -noknown -p 4
+	# findMotifs.pl "${TF}_${ZeroTag}_4.fa" fasta "${TF}_4_homer_denovo_short" \
+	# -fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" \
+	# -noredun -len 6,8 -noknown -p 4
 
 	python "$CODEDIR"/htmltotext.py \
 		"${TF}_4_homer_denovo_short"/homerResults.html \
@@ -197,9 +205,9 @@ then
 	## De novo motif analysis of cycle 4 long
 	echo "	Starting de novo motif analysis for Cycle4 for 16-18 bp sequences"
 	echo "	This could take a while..."
-	findMotifs.pl "${TF}_${ZeroTag}_4.fa" fasta "${TF}_4_homer_denovo_long" \
-	-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" \
-	-noredun -len 16,18 -noknown -p 4
+	# findMotifs.pl "${TF}_${ZeroTag}_4.fa" fasta "${TF}_4_homer_denovo_long" \
+	# -fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" \
+	# -noredun -len 16,18 -noknown -p 4
 	rm "${TF}_${ZeroTag}_4.fa"
 
 	python "$CODEDIR"/htmltotext.py \
@@ -228,9 +236,17 @@ fi
 
 if [ "$eflag" = "true" ]
 then
+
+	cd "$BASEDIR"/"$TF"
+	if [ $( head long_motif_consensus.txt ) = 'N/A' ]
+	then
+		echo "	No dimer site found. Exiting"
+		python "$CODEDIR"/Dimer_enrichment_calculator.py
+		exit 1
+	fi
 	 
 	## Load important modules
-	mpurge
+	module purge
 	module load homer/4.9-wrl
 	module load python3
 		
@@ -297,6 +313,12 @@ then
 
 	module purge
 	module load python3
+	
+	if [ $( head long_motif_consensus.txt ) = 'N/A' ]
+	then
+		echo "	No dimer site found. Exiting"
+		exit 1
+	fi
 
 	## Set variables
 	DIST=10; echo "	A max spacer distance is 10."
@@ -369,9 +391,9 @@ then
 		rm "${TF}_${ZeroTag}_${Cycle}.fastq"
 		
 		## Run foreground scan
-		# "$CODEDIR"/../COSMO/cosmo/cosmo_v1.py --fasta \
-			# "${TF}_${ZeroTag}_${Cycle}.fa" \
-			# --threshold $THRES --distance $DIST -p ../top_dimer_kmer_motifs/
+		"$CODEDIR"/../COSMO/cosmo/cosmo_v1.py --fasta \
+			"${TF}_${ZeroTag}_${Cycle}.fa" \
+			--threshold $THRES --distance $DIST -p ../top_dimer_kmer_motifs/
 		
 		## Run 30 background scans
 		if [ "$Cycle" -eq 4 ]
@@ -382,9 +404,9 @@ then
 			for shuff in ${shuffle_count[@]}
 			do
 				echo "	Running bg scan "$shuff" "
-				# "$CODEDIR"/../COSMO/cosmo/cosmo_v1.py --fasta \
-				# ../"${TF}_${ZeroTag}_${Cycle}.fa" --number $shuff --threshold $THRES \
-				# --distance $DIST --pwmdir ../../top_dimer_kmer_motifs/ --scramflag
+				"$CODEDIR"/../COSMO/cosmo/cosmo_v1.py --fasta \
+				../"${TF}_${ZeroTag}_${Cycle}.fa" --number $shuff --threshold $THRES \
+				--distance $DIST --pwmdir ../../top_dimer_kmer_motifs/ --scramflag
 			done
 
 			## Run stats
