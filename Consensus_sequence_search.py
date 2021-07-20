@@ -121,6 +121,23 @@ for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
     Other_scores = Max_bp.sum(axis = 0) / Max_bp.shape[0]
     print(Top_sites_score/Other_scores)
     
+    with open(path + '/Cycle4/' + TF +'_4_homer_denovo_long/homerResults.txt','r') as read:
+        for line in read:
+            if line.split('\t')[0] == motif_number:
+                if line.split('\t')[1] == '*':
+                    logP = line.split('\t')[3]
+                    Target = line.split('\t')[4]
+                    Bg = line.split('\t')[5]
+                else:
+                    logP = line.split('\t')[2]
+                    Target = line.split('\t')[3]
+                    Bg = line.split('\t')[4]
+    
+    with open(path + '/dimer_description_check.txt', 'a') as log :
+        log.write(TF+ '\t' + str(round(Top_sites_score/Other_scores,3)) + '\t' + str(round(Top_sites_score,3)) + '\t'
+            + str(round(Other_scores,3)) + '\t' + str(round(top_site['Score'],3)) + '\t' + str(top_site2['Score']) + '\t' + 
+            logP + '\t' + Target + '\t' + Bg + '\n')
+
     if Top_sites_score > Other_scores * Top2SpacThres and top_site['Score'] > 0.6 and top_site2['Score'] > 0.6 :
         D_site_found = True
         export_path = path + '/Cycle4/' + TF + '_4_homer_denovo_long/D_site_motif.txt'
@@ -141,14 +158,15 @@ for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
             dimer_site = top_site2['Seq'] + str(Spacer) + 'N' + top_site['Seq']
             motif1 = top_site2
             motif2 = top_site
-
+            
+            
         export_path = path + '/long_motif_consensus.txt'
         print(top_site); print(top_site2)
         with open(export_path,'a') as log:
             log.write(dimer_site)
             log.write('\n')
 
-        ## Generate motif files for COSMO        
+        # Generate motif files for COSMO        
         if ( COSMO == True ):
             ## Index top sites from motif file
             motif1 = motif.loc[motif1['Start']:motif1['End']]*100
@@ -164,6 +182,7 @@ for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
             with open(export_path_COSMO + 'motif2.jpwm','w') as log:
                 log.write(motif2.to_string(index = False, header = False))
 
+export_path = path + '/long_motif_consensus.txt'
 if D_site_found == False:
     print('No dimer sites found in any de novo motif analyses. Exiting')
     with open(export_path,'w') as log:

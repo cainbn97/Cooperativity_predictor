@@ -21,6 +21,7 @@ cat(paste('TF','Dimer site','Chi-square', 'Chi-square post hoc no correction', '
 cat("\n")
 sink()
 
+c = 1
 dimers = list.files(pattern = 'dimer_[0-9]\\.motif$')
 print(dimers)
 
@@ -37,7 +38,7 @@ for ( dimer in dimers )
 	consensus_path = paste(getwd(),"/long_motif_consensus.txt", sep = "")
 
 	## Grab spacer value from string
-	long_consensus = readLines(consensus_path)[dimer_number]
+	long_consensus = readLines(consensus_path)[c]
 	print(long_consensus, quote = FALSE)
 	spacer = parse_number(long_consensus)
 	Column = paste("X",spacer, sep = "")
@@ -58,7 +59,7 @@ for ( dimer in dimers )
 			print(paste("Dimers with a spacer of ", j, "is overrepresented in Cycle 4."), quote = FALSE)
 		}
 	}
-
+	print(Cycle0_4_norm)
 	## Perform chi-square
 	chi_tot = chisq.test(Cycle0_4_norm, y = NULL, rescale.p = TRUE)
 	print(chi_tot)
@@ -96,4 +97,6 @@ for ( dimer in dimers )
 	# cat(unlist(COSMO_zstats),sep = "\t")
 	cat("\n")
 	sink()
+	
+	c = c + 1
 	}

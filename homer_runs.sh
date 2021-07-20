@@ -137,7 +137,7 @@ Rounds=(1 2 3 4)
 for Cycle in ${Rounds[@]}
 do
 	cd "$BASEDIR"/"$TF"/"Cycle${Cycle}"
-	Fastq_target["$Cycle"]=$( ls *"${Cycle}.fastq.gz" )
+	Fastq_target["$Cycle"]=$( ls *.fastq.gz )
 done
 
 # check file integrities
@@ -217,8 +217,8 @@ then
 	## Convert zipped fastq files to fasta for zero cycle
 	cd "$BASEDIR"/"$ZeroTag"
 	zcat "$Fastq_bg" > "${ZeroTag}.fastq"
-	paste - - - - < "${ZeroTag}.fastq" | cut -f 1,2 | sed 's/^@/>/' |\
-	tr "\t" "\n" > "${ZeroTag}.fa"
+	paste - - - - < "${ZeroTag}.fastq" | shuf | cut -f 1,2 | sed 's/^@/>/' |\
+	tr "\t" "\n" | head -100000 > "${ZeroTag}.fa"
 	rm "${ZeroTag}.fastq"
 
 	## Convert zipped fastq files to fasta for cycle 4, extract 50k sequences (sampling)
@@ -230,9 +230,9 @@ then
 
 	## De novo motif analysis of cycle 4 short
 	echo "	Starting de novo motif analysis for Cycle3 for 6-8 bp sequences"
-	# findMotifs.pl "${TF}_${ZeroTag}_4.fa" fasta "${TF}_4_homer_denovo_short" \
-	# -fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" \
-	# -noredun -len 6,8 -noknown -p 4
+	findMotifs.pl "${TF}_${ZeroTag}_4.fa" fasta "${TF}_4_homer_denovo_short" \
+	-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" \
+	-noredun -len 6,8 -noknown -p 4
 
 	python "$CODEDIR"/htmltotext.py \
 		"${TF}_4_homer_denovo_short"/homerResults.html \
@@ -241,9 +241,9 @@ then
 	## De novo motif analysis of cycle 4 long
 	echo "	Starting de novo motif analysis for Cycle4 for 16-18 bp sequences"
 	echo "	This could take a while..."
-	# findMotifs.pl "${TF}_${ZeroTag}_4.fa" fasta "${TF}_4_homer_denovo_long" \
-	# -fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" \
-	# -noredun -len 16,18 -noknown -p 4
+	findMotifs.pl "${TF}_${ZeroTag}_4.fa" fasta "${TF}_4_homer_denovo_long" \
+	-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" \
+	-noredun -len 16,18 -noknown -p 4
 	rm "${TF}_${ZeroTag}_4.fa"
 
 	python "$CODEDIR"/htmltotext.py \
@@ -257,16 +257,27 @@ then
 	cd Cycle4
 	cp "${TF}_4_homer_denovo_short/homerResults/motif1.motif" \
 		"$BASEDIR"/"$TF"/"monomer.motif"
-		
-	cat "${TF}_4_homer_denovo_long"/D_site_motif.txt | while read line;
-	do
-		## Copy relevant motifs to TF directory
-		l_motif_number=$( echo $line | cut -d . -f 1 | cut -d f -f 2 )
-		cp "${TF}_4_homer_denovo_long/homerResults/$line" \
-			"$BASEDIR"/"$TF"/dimer_"$l_motif_number".motif
-	done
-	rm "${TF}_4_homer_denovo_long"/D_site_motif.txt
-
+	
+	if [ -e "${TF}_4_homer_denovo_long"/D_site_motif.txt ]
+	then
+		cat "${TF}_4_homer_denovo_long"/D_site_motif.txt | while read line;
+		do
+			## Copy relevant motifs to TF directory
+			l_motif_number=$( echo $line | cut -d . -f 1 | cut -d f -f 2 )
+			cp "${TF}_4_homer_denovo_long/homerResults/$line" \
+				"$BASEDIR"/"$TF"/dimer_"$l_motif_number".motif
+			
+			## Convert half sites to motif files		
+			seq2profile.pl $( head -"$l_motif_number" "$BASEDIR"/"$TF"/long_motif_consensus.txt |\
+				tail -1 | head -c 4 ) > "$BASEDIR"/"$TF"/site1_dimer_"$l_motif_number".motif
+			
+			seq2profile.pl $( head -"$l_motif_number" "$BASEDIR"/"$TF"/long_motif_consensus.txt |\
+				tail -1 | tail -c 5 | head -c 4 ) >\
+				"$BASEDIR"/"$TF"/site2_dimer_"$l_motif_number".motif
+				
+		done
+		rm "${TF}_4_homer_denovo_long"/D_site_motif.txt
+	fi
 fi
 
 #####################################
@@ -322,20 +333,33 @@ then
 		rm "${TF}_${ZeroTag}_${Cycle}.fastq"
 
 		## Search every dimer motif
-		ls .. | grep dimer_..motif | while read dmotifs;
+		ls .. | grep dimer_..motif | grep -v site | while read dmotifs;
 		do
 			dmotif_number=$( echo $dmotifs | cut -d . -f 1 | cut -d f -f 2 )
-			## Find prevalence of Cycle 4 short motifs
+			
+			## Find prevalence of half site 1
 			findMotifs.pl "${TF}_${ZeroTag}_${Cycle}.fa" fasta  \
-			"${TF}_${Cycle}_monomer_${dmotif_number}_mask_homer" \
+			"${TF}_${Cycle}_site1_${dmotif_number}_mask_homer" \
 			-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" -nomotif \
-			-mknown "$BASEDIR"/"$TF"/"monomer.motif" -noweight -p 4 \
+			-mknown "$BASEDIR"/"$TF"/site1_"$dmotifs" -noweight -p 4 \
 			-maskMotif "$BASEDIR"/"$TF"/"$dmotifs"
 			
 			## Convert knownResults.html to text file
 			python "$CODEDIR"/htmltotext.py \
-				"${TF}_${Cycle}_monomer_${dmotif_number}_mask_homer"/knownResults.html \
-				"${TF}_${Cycle}_monomer_${dmotif_number}_mask_homer"/knownResults.txt 
+				"${TF}_${Cycle}_site1_${dmotif_number}_mask_homer"/knownResults.html \
+				"${TF}_${Cycle}_site1_${dmotif_number}_mask_homer"/knownResults.txt 
+						
+			## Find prevalence of half site 2
+			findMotifs.pl "${TF}_${ZeroTag}_${Cycle}.fa" fasta  \
+			"${TF}_${Cycle}_site2_${dmotif_number}_mask_homer" \
+			-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" -nomotif \
+			-mknown "$BASEDIR"/"$TF"/site2_"$dmotifs" -noweight -p 4 \
+			-maskMotif "$BASEDIR"/"$TF"/"$dmotifs"
+			
+			## Convert knownResults.html to text file
+			python "$CODEDIR"/htmltotext.py \
+				"${TF}_${Cycle}_site2_${dmotif_number}_mask_homer"/knownResults.html \
+				"${TF}_${Cycle}_site2_${dmotif_number}_mask_homer"/knownResults.txt 
 			
 			## Find prevalence of Cycle 4 long motifs
 			findMotifs.pl "${TF}_${ZeroTag}_${Cycle}.fa" fasta  \
@@ -380,7 +404,7 @@ then
 	fi
 
 	## Set variables
-	DIST=10; echo "	The max spacer distance is set to 10."
+	DIST=20; echo "	The max spacer distance is set to 10."
 	if [ -z ${THRES+x} ]
 	then
 		echo "	A default of 0.8 being used for motif threshold."
@@ -438,7 +462,7 @@ then
 				cd "$BASEDIR"/"$ZeroTag"
 				zcat "$Fastq_bg" > "${ZeroTag}.fastq"
 				paste - - - - < "${ZeroTag}.fastq" | cut -f 1,2 | sed 's/^@/>/' |\
-					tr "\t" "\n" | awk 'NR %2 {print ">chr" (NR+1)/2 ":1-30"} NR %2-1 {print $0}' \
+					tr "\t" "\n" | awk 'NR %2 {print ">chr" (NR+1)/2 ":1-40"} NR %2-1 {print $0}' \
 					> "${ZeroTag}.fa"
 				rm "${ZeroTag}.fastq"
 							
@@ -462,7 +486,7 @@ then
 				zcat "${Fastq_target[$Cycle]}" > "${TF}_${ZeroTag}_${Cycle}.fastq"
 				paste - - - - < "${TF}_${ZeroTag}_${Cycle}.fastq" | cut -f 1,2 |\
 					sed 's/^@/>/' |	 tr "\t" "\n" | \
-					awk 'NR %2 {print ">chr" (NR+1)/2 ":1-30"} NR %2-1 {print $0}' \
+					awk 'NR %2 {print ">chr" (NR+1)/2 ":1-40"} NR %2-1 {print $0}' \
 					> "${TF}_${ZeroTag}_${Cycle}.fa"	
 				rm "${TF}_${ZeroTag}_${Cycle}.fastq"
 				

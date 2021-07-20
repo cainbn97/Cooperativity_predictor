@@ -70,6 +70,7 @@ for dimers in sorted(glob.glob(dimer_paths)):
             plt.xlabel('Spacer Length'); plt.ylabel('Cycle number')
             plt.title(TF + ' ' + str(long_consensus[c]) + ' '+ site + ' ' + ' Cosmo Output')
             fig = HeatMap.get_figure()
+            # plt.figure(figsize=(12,6), dpi = 80)
             fig.savefig(filename)
             
             output = TF + '_' + dimer +  '_COSMO_counts_' + site_type + '_' + site + '.txt'
