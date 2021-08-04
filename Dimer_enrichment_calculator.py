@@ -26,11 +26,24 @@ def parsing_half_sites(site):
     Cycle1 = True
     
     Fold_change_mon = [1]
-    Fold_change_dim = [1]
-    Bg_percent_mon = []; Bg_percent_dim = []
+    Bg_percent_mon = []
     Target_percent_mon = []
     Target_percent_dim = []
     notes = []
+    
+    
+    ## Read consensus sequence directly from motif file    
+    with open(path + '/' + site + '_' + dimers + '.motif') as file:
+        Consensus_seq = file.readline().split('\t')[1]
+        nmatches = 0
+        for match in re.finditer('W|R|Y|S|K|M|B|D|H|V|N', Consensus_seq):
+            nmatches += 1
+        if nmatches > 1 :
+            Fold_change_mon = [1, 0, 0, 0, 0]
+            Target_percent_mon = [0,0,0,0,0]
+            print('\tHalf ' + site + ' was is too ambiguous...')
+            notes.append('Half ' + site + ' was is too ambiguous...')
+            return [Consensus_seq, Fold_change_mon, Target_percent_mon, Bg_percent_mon, notes]
     
     for c in np.arange(1,5):
         c = str(c)
@@ -49,20 +62,7 @@ def parsing_half_sites(site):
                     ## skip header
                     continue
                 else:
-                    Consensus_seq = line.split('\t')[1]
-                    nmatches = 0
-                    for match in re.finditer('W|R|Y|S|K|M|B|D|H|V|N', Consensus_seq):
-                        nmatches += 1
-                    if nmatches > 1 :
-                        Fold_change_mon.append(0)
-                        Target_percent_mon.append(0)
-                        continue
-                    
-                    ## Check lengths - some motifs will not be found at each cycle
-                    if ( Cycle1 == True and len(Fold_change_mon) != int(c) ) or ( Cycle1 == False and len(Fold_change_mon)+1 != int(c) ): 
-                        Fold_change_mon.append(0)
-                        notes.append('Monomer motif missing on cycle '+str(int(c)-1))                                                           
-                   
+                                                                                                
                     Target_percent_temp = line.split('\t')[5]
                     Target_percent_mon.append(round(float(Target_percent_temp.split('%')[0]),2))
                 
@@ -71,6 +71,20 @@ def parsing_half_sites(site):
                     
                     Fold_change = Target_percent_mon[-1]/Bg_percent_mon[0]
                     Fold_change_mon.append(Fold_change)
+    
+        ## Check lengths - some motifs will not be found at each cycle
+        if ( Cycle1 == True and len(Fold_change_mon)-1 != int(c) ) or ( Cycle1 == False and len(Fold_change_mon) != int(c) ): 
+            Fold_change_mon.append(0)
+            Target_percent_mon.append(0)
+            notes.append('Half ' + site + ' missing on cycle '+str(int(c))) 
+            print('Half ' + site + ' missing on cycle '+str(int(c)))
+    
+    if len(Fold_change_mon) < 3:
+        print('\tHalf ' + site + ' was masked by dimer site...')
+        notes.append('Half ' + site + ' was masked by dimer site.')
+        Fold_change_mon = [1, 0, 0, 0, 0]
+        Target_percent_mon = [0,0,0,0,0]
+       
     return [Consensus_seq, Fold_change_mon, Target_percent_mon, Bg_percent_mon, notes]
 
 def fit_lines(cy, Fold_change):
@@ -143,6 +157,10 @@ for dimers in sorted(glob.glob(dimer_motifs)):
         c = str(c)
         file = path+'/Cycle'+c+'/'+TF+'_'+c+'_' + dimers + '_homer/knownResults.txt'
         
+        with open(path + '/' + dimers + '.motif') as dimer_motif:
+            Consensus_seq_dim = dimer_motif.readline().split('\t')[1]
+            
+            
         ## Check if cycle 1 was used as background. Skip if it was
         if ( os.path.isfile(file) == False ) and ( c == '1'):
             Cycle1 = False
@@ -155,17 +173,9 @@ for dimers in sorted(glob.glob(dimer_motifs)):
                 if i == 0:
                     ## skip header
                     continue
-                else:
-                    Consensus_seq_temp = line.split('-')[1]
-                    Consensus_seq = Consensus_seq_temp.split(',')[0]
-                    
-                    ## Check lengths - some motifs will not be found at each cycle
-                    if ( Cycle1 == True and len(Fold_change_dim) != int(c) ) or ( Cycle1 == False and len(Fold_change_dim)+1 != int(c) ): 
-                        Fold_change_dim.append(0)
-                        notes.append('Dimer motif missing on cycle '+str(int(c)-1) )                                                       
+                else:                                                    
                    
                     ## Parse dimer
-                    Consensus_seq_dim = Consensus_seq
                     Target_percent_temp = line.split('\t')[6]
                     Target_percent_dim.append(round(float(Target_percent_temp.split('%')[0]),2))
                     Bg_percent_temp = line.split('\t')[8]
@@ -180,46 +190,64 @@ for dimers in sorted(glob.glob(dimer_motifs)):
                     
                     Fold_change_dim.append(Fold_change)    
                     
+        ## Check lengths - some motifs will not be found at each cycle
+        if ( Cycle1 == True and len(Fold_change_dim)-1 != int(c) ) or ( Cycle1 == False and len(Fold_change_dim) != int(c) ): 
+            Fold_change_dim.append(0)
+            notes.append('Dimer motif missing on cycle '+str(int(c)) )
+            print('Dimer motif missing on cycle '+str(int(c)) )
+            
+            
+    ## Read dimer sequence from consensus sequence search
+    long_consensus_path = path + '/long_motif_consensus.txt'
+    with open(long_consensus_path, 'r') as dimer:            
+        dimer_site = dimer.readlines()[d_count]
+        dimer_site = str(dimer_site).strip()
+    
+    if len(Target_percent_dim) < 3 or ( len(Target_percent_mon) < 3 and len(Target_percent_mon2) < 3):
+        notes.append('Dimer appeared in ' + str(len(Target_percent_dim)) + ' cycles. Exiting')
+        print('Dimer appeared in ' + str(len(Target_percent_dim)) + ' cycles. Exiting')
+        with open(Run_summary,'a') as log:
+            log.write(TF+'\t'+ str(dimer_site)+'\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t' + 
+                    str(notes) + '\n')
+        continue
+
+    ## Initialize arrays
+    if Cycle1 == False:
+        cy = np.arange(1,5)
+    else:
+        cy = np.arange(0,5)
+
     ## Check for possible oversaturation - remove fourth cycle               
-    if ( Target_percent_mon[-2] > 50 or Target_percent_mon2[-2] > 50 ):
+    if Target_percent_mon[-2] > 50:
         notes.append('Cycle 4 half site fold change ('+str(round(Fold_change_mon[-1],2))+') masked to avoid saturation')
-        notes.append('Cycle 4 half site fold change ('+str(round(Fold_change_mon2[-1],2))+') masked to avoid saturation')
         Fold_change_mon[-1] = 0
+        
+    if Target_percent_mon2[-2] > 50:
+        notes.append('Cycle 4 half site fold change ('+str(round(Fold_change_mon2[-1],2))+') masked to avoid saturation')
         Fold_change_mon2[-1] = 0
 
     if Target_percent_dim[-2] > 50:
         notes.append('Cycle 4 dimer fold change ('+str(round(Fold_change_dim[-1],2))+') masked to avoid saturation')
         Fold_change_dim[-1] = 0
 
-    ## Read dimer sequence from consensus sequence search
-    long_consensus_path = path + '/long_motif_consensus.txt'
-    with open(long_consensus_path, 'r') as dimer:            
-        dimer_site = dimer.readlines()[d_count]
-        dimer_site = str(dimer_site).strip()
-
     ## Check for prevalence of dimer site at cycle 4 - where de novo motif found
-    if Target_percent_dim[-1] < 5:
-        Cooperative = 0
-        notes.append('Dimer motif at Cycle 4 had an enrichment of <5%.')
-        print('\tDimer prevalence less than 5% - exiting')
-        export_path = 'top_dimer_kmer_motifs_' + dimers
-        os.remove(export_path + '/motif1.jpwm')
-        os.remove(export_path + '/motif2.jpwm')
-        os.rmdir(export_path)
-        os.remove(dimers + '.motif')
-        with open(Run_summary,'a') as log:
-            log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
-            '\t'+str(Consensus_seq_dim)+'\t\t\t'
-            +str(Consensus_seq_mon)+'\t\t\t'+ str(np.round(Target_percent_mon))+'\t'
-            +str(np.round(Target_percent_mon2)) + '\t' + 
-            +str(np.round(Target_percent_dim))+'\t\t\t\t'+str(notes)+'\n')
-            continue
+    # if Target_percent_dim[-1] < 5:
+        # Cooperative = 0
+        # notes.append('Dimer motif at Cycle 4 had an enrichment of <5%.')
+        # print('\tDimer prevalence less than 5% - exiting')
+        # export_path = 'top_dimer_kmer_motifs_' + dimers
+        # os.remove(export_path + '/motif1.jpwm')
+        # os.remove(export_path + '/motif2.jpwm')
+        # os.rmdir(export_path)
+        # os.remove(dimers + '.motif')
+        # with open(Run_summary,'a') as log:
+            # log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
+            # '\t'+str(Consensus_seq_dim)+'\t\t\t'
+            # +str(Consensus_seq_mon)+'\t\t\t'+ str(np.round(Target_percent_mon))+'\t'
+            # +str(np.round(Target_percent_mon2)) + '\t' + 
+            # +str(np.round(Target_percent_dim))+'\t\t\t\t'+str(notes)+'\n')
+            # continue
                     
-    ## Initialize arrays
-    if Cycle1 == False:
-        cy = np.arange(1,5)
-    else:
-        cy = np.arange(0,5)
 
     Fold_change_mon = np.array(Fold_change_mon)
     Fold_change_mon2 = np.array(Fold_change_mon2)
@@ -230,51 +258,84 @@ for dimers in sorted(glob.glob(dimer_motifs)):
     mask_mon = (Fold_change_mon != 0)
     mask_mon2 = (Fold_change_mon2 != 0)
     mask_dim = (Fold_change_dim != 0)
-
-    ## Natural log transform
+    
+    ## Natural log transform, save nan positions for averaging
     cy_mon = cy[mask_mon]
+    Fold_change_mon_tmp = np.log(Fold_change_mon).astype('float')
+    Fold_change_mon_tmp[Fold_change_mon_tmp == np.NINF] = np.nan    
     Fold_change_mon = np.log(Fold_change_mon[mask_mon])
     
     cy_mon2 = cy[mask_mon2]
+    Fold_change_mon2_tmp = np.log(Fold_change_mon2).astype('float')
+    Fold_change_mon2_tmp[Fold_change_mon2_tmp == np.NINF] = np.nan  
     Fold_change_mon2 = np.log(Fold_change_mon2[mask_mon2])
 
     cy_dim = cy[mask_dim]
     Fold_change_dim = np.log(Fold_change_dim[mask_dim])
+    print(Fold_change_dim)
 
-    if np.all(Fold_change_mon == 0) and np.all(Fold_change_mon2[1:5] == 0 ):
-        print('Monomer sites are too deprecated. Cooperativity factor calculation \
-is not recommended. Exiting.')
-        notes.append('Half site 1 ' + Consensus_seq_mon + ' is too ambiguous')
-        notes.append('Half site 2 ' + Consensus_seq_mon2 + ' is too ambiguous')
-        exit()
-    elif np.all(Fold_change_mon == 0):
-        print('\tHalf site 1 is too deprecated. Will not be used for slope calculation.')
+    ## Neither half site is usable
+    if np.all(Fold_change_mon[1:5] == 0) and np.all(Fold_change_mon2[1:5] == 0 ):
+        print('\tExiting.')
+        with open(Run_summary,'a') as log:
+            log.write(TF+'\t'+ str(dimer_site)+'\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t' + 
+                str(notes) + '\n')
+        continue
+        
+    ## Only half site 2 is usable
+    elif np.all(Fold_change_mon[1:5] == 0):
         Fold_change_mon_avg = Fold_change_mon2
-        notes.append('Half site 1  ' + Consensus_seq_mon + ' is too ambiguous')
+        slope_mon = 'N/A'
+        R2_mon = 'N/A'
+        
+        slope_mon_avg = fit_lines(cy_mon2, Fold_change_mon2)
+        R2_mon2 = str(np.round(Rsq(cy_mon2, Fold_change_mon2, slope_mon_avg),4))
+        slope_mon2 = str(np.round(slope_mon_avg,3))
+    
+    ## Only half site 1 is usable
     elif np.all(Fold_change_mon2[1:5] == 0 ):
-        print('\tHalf site 2 is too deprecated. Will not be used for slope calculation.')
         Fold_change_mon_avg = Fold_change_mon
-        notes.append('Half site 2 ' + Consensus_seq_mon2 + ' is too ambiguous')
+        slope_mon2 = 'N/A'
+        R2_mon2 = 'N/A'
+        
+        slope_mon_avg = fit_lines(cy_mon, Fold_change_mon)
+        R2_mon = str(np.round(Rsq(cy_mon, Fold_change_mon, slope_mon_avg),4))
+        slope_mon = str(np.round(slope_mon_avg,3))
+    
+    ## Both half sites are usable
     else:
-        Fold_change_mon_avg = np.mean(np.array( [Fold_change_mon, Fold_change_mon2] \
+    
+        Fold_change_mon_avg = np.nanmean(np.array( [Fold_change_mon_tmp, Fold_change_mon2_tmp] \
             ), axis = 0)
+        
+        print(Fold_change_mon_tmp)
+        slope_mon = fit_lines(cy_mon, Fold_change_mon)
+        print(Fold_change_mon2_tmp)
+        slope_mon2 = fit_lines(cy_mon2, Fold_change_mon2)
+        print(Fold_change_mon_avg)
+        slope_mon_avg = fit_lines(cy[~np.isnan(Fold_change_mon_avg)], \
+            Fold_change_mon_avg[~np.isnan(Fold_change_mon_avg)])
+        
+        R2_mon = Rsq(cy_mon, Fold_change_mon, slope_mon)
+        R2_mon2 = Rsq(cy_mon2, Fold_change_mon2, slope_mon2)
+        
+        slope_mon = str(np.round(slope_mon,2))
+        slope_mon2 = str(np.round(slope_mon2,2))
+        R2_mon = str(np.round(R2_mon,2))
+        R2_mon2 = str(np.round(R2_mon2,2))
+        
 
     ## Fit lines   
-    slope_mon = fit_lines(cy_mon, Fold_change_mon)
-    slope_mon2 = fit_lines(cy_mon2, Fold_change_mon2)
-    slope_mon_avg = fit_lines(cy_mon, Fold_change_mon_avg)
     slope_dim = fit_lines(cy_dim, Fold_change_dim)
 
     ## Calculate Rsquared
-    R2_mon = Rsq(cy_mon, Fold_change_mon, slope_mon)
-    R2_mon2 = Rsq(cy_mon2, Fold_change_mon2, slope_mon2)
     R2_dim = Rsq(cy_dim, Fold_change_dim, slope_dim)
 
     ## Assess cooperativity - NEEDS THRESHOLD
     if slope_dim > slope_mon_avg:
         print('\tDimer had higher enrichment than monomer.')
 
-    Cooperative = np.round(slope_dim/slope_mon,2)
+    Cooperative = np.round(slope_dim/slope_mon_avg,2)
 
     ## Plot natural log transformed curves
     if Fold_change_mon[-1] > Fold_change_dim[-1]:
@@ -296,15 +357,15 @@ is not recommended. Exiting.')
     plt.title(plot_title)
     plt.axis([-0.25, 4.5, 0, Max + 1])
     
-    if np.all(Fold_change_mon == 0):
+    if np.all(Fold_change_mon[1:5] == 0):
         plt.legend([M, M2, D] , [f'Half site 1: N/A', \
-            f'Half site 2: {np.round(slope_mon2,2)}', f'Dimer: {np.round(slope_dim,2)}'])
+            f'Half site 2: {slope_mon2}', f'Dimer: {np.round(slope_dim,2)}'])
     elif np.all(Fold_change_mon2[1:5] == 0 ):
-        plt.legend([M, M2, D] , [f'Half site 1: {np.round(slope_mon,2)}', \
+        plt.legend([M, M2, D] , [f'Half site 1: {slope_mon}', \
             f'Half site 2: N/A', f'Dimer: {np.round(slope_dim,2)}'])
     else:
-        plt.legend([M, M2, D] , [f'Half site 1: {np.round(slope_mon,2)}', \
-            f'Half site 2: {np.round(slope_mon2,2)}', f'Dimer: {np.round(slope_dim,2)}'])
+        plt.legend([M, M2, D] , [f'Half site 1: {slope_mon}', \
+            f'Half site 2: {slope_mon2}', f'Dimer: {np.round(slope_dim,2)}'])
     
         
     filename = TF + '_NatLog_2_Enrichment_plot_' + dimers + '.png'
@@ -315,9 +376,9 @@ is not recommended. Exiting.')
     with open(Run_summary,'a') as log:
         log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
         '\t'+str(Consensus_seq_dim)+'\t'+str(np.round(slope_dim,2))+'\t'+str(np.round(R2_dim,4))+
-        '\t'+str(Consensus_seq_mon)+'\t'+str(np.round(slope_mon,2))+'\t'+str(np.round(R2_mon,4))+
-        '\t'+str(Consensus_seq_mon2)+'\t'+str(np.round(slope_mon2,2))+'\t'+str(np.round(R2_mon2,4))+
+        '\t'+str(Consensus_seq_mon)+'\t'+slope_mon+'\t'+R2_mon+
+        '\t'+str(Consensus_seq_mon2)+'\t'+slope_mon2+'\t'+R2_mon2+
         '\t'+str(np.round(Target_percent_mon,2))+'\t'+str(np.round(Target_percent_dim,2))+
-        '\t'+str(np.round(Fold_change_mon,2))+'\t'+str(np.round(Fold_change_dim,2))+'\t'+str(notes)+'\n')
+        '\t'+str(np.round(Fold_change_mon,2))+'\t'+str(np.round(Fold_change_mon2,2))+'\t'+str(np.round(Fold_change_dim,2))+'\t'+str(notes)+'\n')
         
-    d_count += 1
+    d_count += 1; print('\n\n')
