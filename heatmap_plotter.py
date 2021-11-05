@@ -46,7 +46,7 @@ for dimers in sorted(glob.glob(dimer_paths)):
             
             ## Create matrix of counts
             for file in sorted(glob.glob(files)):
-                cycle_temp = file.split('/')[8]
+                cycle_temp = file.split('/')[-1]
                 cycle.append(cycle_temp.split('_')[0])
                 with open(file, 'r') as readfile:
                     for line in readfile: 

@@ -91,27 +91,16 @@ fi
 ## ACQUIRE FASTQ FROM ENA DATABASE ##
 #####################################
 
-## Check if folder already exists
-if [ -e "$TF"/Cycle4/*.fastq.gz ]
-then
-	echo "	FASTQ files exist. Starting analysis..."
-	## Could be cool to not require links if fastq files are present
-	
-	
-else
-	echo "	FASTQ files do not exist. Downloading files..."
-	
-	## Make necessary directories and download files
-	mkdir "$TF"; cd "$TF"
-	mkdir Cycle1; mkdir Cycle2; mkdir Cycle3; mkdir Cycle4
+## Piece together target links
 
+if [ ! -z ${Target_link+x} ]
+then
 	## Read sample accession of cycle 1 and extrapolate other cycle accessions
 	SampAcc_Cycle1=$( echo "$Target_link" | cut -d / -f 5 | cut -d R -f 3 )
 	SampAcc_Cycle2=$(( SampAcc_Cycle1 + 1 ))
 	SampAcc_Cycle3=$(( SampAcc_Cycle1 + 2 ))
 	SampAcc_Cycle4=$(( SampAcc_Cycle1 + 3 ))
 
-	## Piece together target links
 	LINK1="$Target_link"
 	LINK2=$( echo $Target_link |\
 		cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle2}/"$( echo $Target_link |\
@@ -122,15 +111,35 @@ else
 	LINK4=$( echo $Target_link |\
 		cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle4}/"$( echo $Target_link |\
 		cut -d / -f 6 | cut -d _ -f 1,2,3 )"_4.fastq.gz"
-
-
-	cd "$BASEDIR"/"$TF"
-	cd Cycle1; wget -nv "$Target_link"
-	cd ../Cycle2; wget -nv "$LINK2"
-	cd ../Cycle3; wget -nv "$LINK3"
-	cd ../Cycle4; wget -nv "$LINK4"
-
+	LINKS=("$LINK1" "$LINK2" "$LINK3" "$LINK4")
 fi
+
+
+if [ ! -d "$TF" ]
+then
+	mkdir "$TF"
+	
+fi
+
+cd "$BASEDIR"/"$TF"
+
+Rounds=(1 2 3 4)
+
+for Cycle in ${Rounds[@]}
+do
+	if [ -e Cycle"$Cycle"/*.fastq.gz ]
+	then
+		echo "	FASTQ file for cycle $Cycle exist..."
+				
+	else
+		echo "	Downloading files for cycle $Cycle from Jolma 2013..."
+		
+		## Make necessary directories and download files		
+		mkdir Cycle"$Cycle"; cd Cycle"$Cycle"; wget -nv ${LINKS[$(( $Cycle - 1 )) ]}
+		cd "$BASEDIR"/"$TF"
+	fi
+done
+
 
 ## Check file integrities and grab downloaded fastq file names in a vector
 Rounds=(1 2 3 4)
@@ -211,7 +220,7 @@ then
 		"
 
 	## Load important modules
-	module load homer/4.9-wrl
+	module load homer/4.9
 	module load python3
 
 	## Convert zipped fastq files to fasta for zero cycle
@@ -227,16 +236,6 @@ then
 	paste - - - - < "${TF}_${ZeroTag}_4.fastq" | shuf | cut -f 1,2 |\
 	sed 's/^@/>/' | tr "\t" "\n" | head -100000 > "${TF}_${ZeroTag}_4.fa"
 	rm "${TF}_${ZeroTag}_4.fastq"
-
-	## De novo motif analysis of cycle 4 short
-	echo "	Starting de novo motif analysis for Cycle3 for 6-8 bp sequences"
-	findMotifs.pl "${TF}_${ZeroTag}_4.fa" fasta "${TF}_4_homer_denovo_short" \
-	-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" \
-	-noredun -len 6,8 -noknown -p 4
-
-	python "$CODEDIR"/htmltotext.py \
-		"${TF}_4_homer_denovo_short"/homerResults.html \
-		"${TF}_4_homer_denovo_short"/homerResults.txt 
 
 	## De novo motif analysis of cycle 4 long
 	echo "	Starting de novo motif analysis for Cycle4 for 16-18 bp sequences"
@@ -255,8 +254,6 @@ then
 	python "$CODEDIR"/Consensus_sequence_search.py -c
 
 	cd Cycle4
-	cp "${TF}_4_homer_denovo_short/homerResults/motif1.motif" \
-		"$BASEDIR"/"$TF"/"monomer.motif"
 	
 	if [ -e "${TF}_4_homer_denovo_long"/D_site_motif.txt ]
 	then
@@ -291,6 +288,11 @@ then
 
 
 		"
+
+	## Load important modules
+	module purge
+	module load homer/4.9-wrl
+	module load python3
 		
 	if [ -z ${Zero_link+x} ]
 	then
@@ -298,19 +300,45 @@ then
 	else
 		Rounds=( 1 2 3 4 )
 	fi
+	
+	## Define spacer based on consensus sequence of top motif, generate COSMO motif files
+	cd "$BASEDIR"/"$TF"
+	if [ ! -s long_motif_consensus.txt ]
+	then
+		python "$CODEDIR"/Consensus_sequence_search.py -c
+		cd Cycle4
+		if [ -e "${TF}_4_homer_denovo_long"/D_site_motif.txt ]
+		then
+			cat "${TF}_4_homer_denovo_long"/D_site_motif.txt | while read line;
+			do
+				## Copy relevant motifs to TF directory
+				l_motif_number=$( echo $line | cut -d . -f 1 | cut -d f -f 2 )
+				cp "${TF}_4_homer_denovo_long/homerResults/$line" \
+					"$BASEDIR"/"$TF"/dimer_"$l_motif_number".motif
+				
+				## Convert half sites to motif files		
+				seq2profile.pl $( head -"$l_motif_number" "$BASEDIR"/"$TF"/long_motif_consensus.txt |\
+					tail -1 | head -c 4 ) > "$BASEDIR"/"$TF"/site1_dimer_"$l_motif_number".motif
+				
+				seq2profile.pl $( head -"$l_motif_number" "$BASEDIR"/"$TF"/long_motif_consensus.txt |\
+					tail -1 | tail -c 5 | head -c 4 ) >\
+					"$BASEDIR"/"$TF"/site2_dimer_"$l_motif_number".motif
+					
+			done
+		rm "${TF}_4_homer_denovo_long"/D_site_motif.txt
+		fi
+	fi
 
 	## Stop run if no long consensus motifs were found
 	cd "$BASEDIR"/"$TF"
 	if [ $( head -1 long_motif_consensus.txt ) = 'N/A' ]
 	then
 		python "$CODEDIR"/Dimer_enrichment_calculator.py
+		module load R
+		Rscript "$CODEDIR"/chi-square.R
 		exit 1
 	fi
 	 
-	## Load important modules
-	module purge
-	module load homer/4.9-wrl
-	module load python3
 		
 	## Convert zipped fastq files to fasta for zero cycle
 	cd "$BASEDIR"/"$ZeroTag"
@@ -341,19 +369,20 @@ then
 			findMotifs.pl "${TF}_${ZeroTag}_${Cycle}.fa" fasta  \
 			"${TF}_${Cycle}_site1_${dmotif_number}_mask_homer" \
 			-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" -nomotif \
-			-mknown "$BASEDIR"/"$TF"/site1_"$dmotifs" -noweight -p 4 \
+			-mknown "$BASEDIR"/"$TF"/site1_"$dmotifs" -noweight  \
 			-maskMotif "$BASEDIR"/"$TF"/"$dmotifs"
 			
 			## Convert knownResults.html to text file
 			python "$CODEDIR"/htmltotext.py \
 				"${TF}_${Cycle}_site1_${dmotif_number}_mask_homer"/knownResults.html \
 				"${TF}_${Cycle}_site1_${dmotif_number}_mask_homer"/knownResults.txt 
-						
+			
+
 			## Find prevalence of half site 2
 			findMotifs.pl "${TF}_${ZeroTag}_${Cycle}.fa" fasta  \
 			"${TF}_${Cycle}_site2_${dmotif_number}_mask_homer" \
 			-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" -nomotif \
-			-mknown "$BASEDIR"/"$TF"/site2_"$dmotifs" -noweight -p 4 \
+			-mknown "$BASEDIR"/"$TF"/site2_"$dmotifs" -noweight  \
 			-maskMotif "$BASEDIR"/"$TF"/"$dmotifs"
 			
 			## Convert knownResults.html to text file
@@ -365,12 +394,14 @@ then
 			findMotifs.pl "${TF}_${ZeroTag}_${Cycle}.fa" fasta  \
 			"${TF}_${Cycle}_${dmotif_number}_homer" \
 			-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" -nomotif \
-			-mknown "$BASEDIR"/"$TF"/"$dmotifs" -noweight -p 4 \
+			-mknown "$BASEDIR"/"$TF"/"$dmotifs" -noweight
+
 
 			## Convert knownResults.html to text file
 			python "$CODEDIR"/htmltotext.py \
 				"${TF}_${Cycle}_${dmotif_number}_homer"/knownResults.html \
 				"${TF}_${Cycle}_${dmotif_number}_homer"/knownResults.txt 
+				
 		done
 	done 
 
@@ -394,12 +425,21 @@ then
 	echo "	Starting COSMO analysis..."
 	module purge
 	module load python3
+	module load R
 	
 	cd "$BASEDIR"/"$TF"
+	
+	if [ -e long_motif_consensus.txt ]
+	then
+		echo "	Motifs for COSMO have been generated."
+	else
+		python "$CODEDIR"/Consensus_sequence_search.py -c
+	fi
 	
 	if [ $( head -1 long_motif_consensus.txt ) = 'N/A' ]
 	then
 		echo "	No dimer site found. Exiting"
+		Rscript "$CODEDIR"/chi-square.R
 		exit 1
 	fi
 
@@ -424,17 +464,7 @@ then
 	cd "$BASEDIR"/"$TF" 
 	if [ "$MODE" -eq 1 ]
 	then
-		python "$CODEDIR"/monomer_motif_trimmer.py --mon_length 4 --top
-
-	else 
-		## Check if the COSMO motifs have been generated
-		if [ -d top_dimer_kmer_motifs_dimer_1 ]
-		then
-			echo "	Motifs for COSMO have already been generated."
-		else
-			python "$CODEDIR"/Consensus_sequence_search.py -c		
-		fi
-		
+		python "$CODEDIR"/monomer_motif_trimmer.py --mon_length 4 --top		
 	fi
 	
 	echo ""
@@ -504,7 +534,7 @@ then
 					mv cosmo.counts.tab "$TF"_"$Cycle"_"$dimer"_homer/
 				fi
 				
-				## Run 30 background scans
+				# Run 30 background scans
 				# if [ "$Cycle" -eq 4 ]
 				# then
 					# echo "	Running background scans on Cycle 4 for statistics."
@@ -527,7 +557,7 @@ then
 					# cd ..
 				# fi
 
-				## Organize output - not all palindromic - orientation matters
+				# Organize output - not all palindromic - orientation matters
 				
 			fi
 			
@@ -549,6 +579,7 @@ then
 	## run all at once to avoid deactivating and inactivating COSMO a bunch
 	deactivate
 	module load python3
+	module load R
 
 	echo ""
 	echo "	Generating heatmaps..."
@@ -559,7 +590,6 @@ then
 	## Perform statistical analysis
 	echo "	Running stats..."
 
-	module load R
 	if [ "$MODE" -eq 1 ]
 	then
 		Rscript "$CODEDIR"/chi-square_all_motif_arrangments.R
@@ -572,5 +602,6 @@ then
 	ls | grep top_dimer_kmer_motifs | cut -d _ -f 5,6 | while read dmotifs
 	do
 		mv "$TF"_"$dmotifs"* top_dimer_kmer_motifs_"$dmotifs"/
+		# mv site?_"$dmotifs".motif top_dimer_kmer_motifs_"$dmotifs"/
 	done
 fi 

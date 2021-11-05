@@ -22,7 +22,7 @@ args = parser.parse_args()
 COSMO = bool(args.COSMO)
 
 Site_length = 4
-Top2SpacThres = 1.5
+Top2SpacThres = 1.6
 
 ## Find and save necessary folders/paths
 path = os.getcwd()
@@ -119,7 +119,7 @@ for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
     
     Top_sites_score = (top_site['Score'] + top_site2['Score'])/2
     Other_scores = Max_bp.sum(axis = 0) / Max_bp.shape[0]
-    print(Top_sites_score/Other_scores)
+    Ratio = np.around(Top_sites_score/Other_scores, decimals = 1)
     
     with open(path + '/Cycle4/' + TF +'_4_homer_denovo_long/homerResults.txt','r') as read:
         for line in read:
@@ -132,13 +132,7 @@ for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
                     logP = line.split('\t')[2]
                     Target = line.split('\t')[3]
                     Bg = line.split('\t')[4]
-    
-    with open(path + '/dimer_description_check.txt', 'a') as log :
-        log.write(TF+ '\t' + str(round(Top_sites_score/Other_scores,3)) + '\t' + str(round(Top_sites_score,3)) + '\t'
-            + str(round(Other_scores,3)) + '\t' + str(round(top_site['Score'],3)) + '\t' + str(top_site2['Score']) + '\t' + 
-            logP + '\t' + Target + '\t' + Bg + '\n')
-
-    if Top_sites_score > Other_scores * Top2SpacThres and top_site['Score'] > 0.6 and top_site2['Score'] > 0.6 :
+    if Ratio >= Top2SpacThres and top_site['Score'] >= 0.6 and top_site2['Score'] >= 0.6 :
         D_site_found = True
         export_path = path + '/Cycle4/' + TF + '_4_homer_denovo_long/D_site_motif.txt'
         with open(export_path, 'a') as log:
@@ -165,6 +159,11 @@ for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
         with open(export_path,'a') as log:
             log.write(dimer_site)
             log.write('\n')
+            
+        with open(path + '/dimer_description_check.txt', 'a') as log :
+            log.write(TF+ '\t' + dimer_site + '\t' + str(round(Top_sites_score/Other_scores,3)) + '\t' + str(round(Top_sites_score,3)) + '\t'
+                + str(round(Other_scores,3)) + '\t' + str(round(top_site['Score'],3)) + '\t' + str(top_site2['Score']) + '\t' + 
+                logP + '\t' + Target + '\t' + Bg + '\n')
 
         # Generate motif files for COSMO        
         if ( COSMO == True ):

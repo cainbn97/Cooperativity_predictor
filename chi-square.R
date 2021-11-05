@@ -13,17 +13,29 @@ library("outliers")
 ## Create an error traceback
 options(error=traceback)
 
+c = 1
+dimers = list.files(pattern = '^dimer_[0-9]\\.motif$')
+print(dimers)
+
 ## Prep output log
 TF = basename(getwd())
 COSMO_output_file = paste(getwd(),'/',TF,'_COSMO_run_summary_wgrubbs.txt', sep = "")
 sink(COSMO_output_file, append = FALSE)
 cat(paste('TF','Dimer site','Chi-square', 'Chi-square post hoc no correction', 'Chi-square post hoc bonferroni correction', 'Grubbs test', 'Top spacer found', 'Z-test result (p)', sep = "\t"))
 cat("\n")
-sink()
 
-c = 1
-dimers = list.files(pattern = 'dimer_[0-9]\\.motif$')
-print(dimers)
+
+if ( readLines('long_motif_consensus.txt') == 'N/A')
+{
+	cat(paste(TF,'No dimer site found', sep = "\t"))
+	cat('\n')
+} else if ( length(dimers) == 0 ) {
+	sink(COSMO_output_file, append = TRUE)
+	cat(paste(TF, 'Dimer prevalence < 5%', sep = "\t"))
+	cat('\n')
+} 
+
+sink()
 
 for ( dimer in dimers )
 	{
