@@ -207,6 +207,25 @@ for dimers in sorted(glob.glob(dimer_motifs)):
         dimer_site = str(dimer_site).strip()
 
     ## Check for prevalence of dimer site at cycle 4 - where de novo motif found
+    if len(Target_percent_dim) == 0:
+        Cooperative = 0
+        notes.append('Dimer motif at Cycle 4 had an enrichment of <5%.')
+        print('\tDimer prevalence less than 5% - exiting')
+        export_path = 'top_dimer_kmer_motifs_' + dimers
+        os.remove(os.path.join(export_path, 'motif1.jpwm'))
+        os.remove(os.path.join(export_path, 'motif2.jpwm'))
+        os.rmdir(export_path)
+        os.remove(dimers + '.motif')
+        with open(Run_summary,'a') as log:
+            log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
+            '\t'+str(Consensus_seq_dim)+'\t\t\t'
+            +str(Consensus_seq_mon)+'\t\t\t'+ str(Consensus_seq_mon2) + 
+            '\t\t\t' + str(np.round(Target_percent_mon,2))+'\t'
+            +str(np.round(Target_percent_mon2,2)) + '\t'
+            +str(np.round(Target_percent_dim,2))+'\t\t\t'+str(notes)+'\n')
+        continue 
+    
+    
     if Target_percent_dim[-1] < 5:
         Cooperative = 0
         notes.append('Dimer motif at Cycle 4 had an enrichment of <5%.')
@@ -224,6 +243,8 @@ for dimers in sorted(glob.glob(dimer_motifs)):
             +str(np.round(Target_percent_mon2,2)) + '\t'
             +str(np.round(Target_percent_dim,2))+'\t\t\t'+str(notes)+'\n')
         continue 
+        
+        
             
     
     if len(Target_percent_dim) < 3 or ( len(Target_percent_mon) < 3 and len(Target_percent_mon2) < 3):

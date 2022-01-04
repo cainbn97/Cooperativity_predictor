@@ -78,7 +78,7 @@ for ( dimer in dimers )
 	chi_tot_pvalue = chi_tot$p.value
 
 	## Perform post-hoc
-	chi_pair_bon = chisq.posthoc.test(Cycle0_4_norm, method = "bonferroni")
+	chi_pair_bon = chisq.posthoc.test(Cycle0_4_norm, method = "bonferroni", round = 30)
 	print(chi_pair_bon)
 	chi_pair = chisq.posthoc.test(Cycle0_4_norm, method = "none")
 	print(chi_pair)
@@ -104,7 +104,7 @@ for ( dimer in dimers )
 
 	## Write data to file
 	sink(COSMO_output_file, append = TRUE)
-	cat(paste(TF, long_consensus, round(chi_tot_pvalue,4) , chi_spac, chi_spac_bon, round(p_grubbs,4), top_spac, p_spac, sep = "\t"))
+	cat(paste(TF, long_consensus, round(chi_tot_pvalue,4) , chi_spac, chi_spac_bon, p_grubbs, top_spac, p_spac, sep = "\t"))
 	cat("\t")
 	# cat(unlist(COSMO_zstats),sep = "\t")
 	cat("\n")

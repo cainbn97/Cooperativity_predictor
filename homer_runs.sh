@@ -38,7 +38,7 @@ while getopts "ceht:m:z:" opt; do
 		;;
 	z)
 		Zero_link=${OPTARG}
-		ZeroTag=$( echo ${OPTARG} | cut -d '_' -f 2 )
+		ZeroTag=$( echo ${Zero_link} | cut -d '_' -f 2 )
 		;;
 	?)
 		echo 	
