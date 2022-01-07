@@ -17,15 +17,16 @@ import os
 
 path = os.getcwd()
 TF = os.path.basename(path)
-dimer_paths = path + '/dimer_[0-9].motif'
+dimer_paths = path + '/PWMs_of_dimers/dimer*'
 orientation = ['motif1_motif1', 'motif1_motif2', 'motif2_motif2','motif2_motif1']
 arrangement = ['FF','RF','FR']
 cycle = []
 
-if len(sorted(glob.glob(path + '/Cycle1/'+ TF + '_[0-9]_dimer_[0-9]_homer/knownResults.txt'))) > 0:
+if os.path.isdir(path + '/Cycle0'):
     end_index = 5
 else:
     end_index = 4
+    
  
 long_consensus = []
 with open(path + '/long_motif_consensus.txt','r') as long_consensus_file:
@@ -40,7 +41,7 @@ for dimers in sorted(glob.glob(dimer_paths)):
     for site_type in orientation:
         for site in arrangement: 
 
-            files = path + '/Cycle[0-9]/*' + dimer + '_homer/*' + site_type + '_' + site + '.tab'
+            files = path + '/Cycle[0-9]/*' + dimer + '/*' + site_type + '_' + site + '.tab'
             matrix = pd.DataFrame(0, index=np.arange(0, end_index), columns = np.arange(1,11))
             cycle = []
             
@@ -50,9 +51,9 @@ for dimers in sorted(glob.glob(dimer_paths)):
                 cycle.append(cycle_temp.split('_')[0])
                 with open(file, 'r') as readfile:
                     for line in readfile: 
-                        spacer = int(line.split('|')[-2])
+                        spacer = int(line.split('|')[-2]);
                         if spacer in np.arange(1,11):
-                            count = int(line.split('|')[-1])
+                            count = int(line.split('|')[-1]);
                             matrix.loc[len(cycle)-1,spacer] += count
                 
             ## Convert NaNs to zeros in case there are missing values

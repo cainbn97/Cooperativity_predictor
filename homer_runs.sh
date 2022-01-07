@@ -14,7 +14,7 @@ CODEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ## Implement a switch to allow COSMO and enrichment script to be run separately
 cflag='';eflag='';hflag=''
 	
-while getopts "ceht:m:z:" opt; do
+while getopts "ceht:z:p:b:" opt; do
 	case $opt in
 	c) cflag=true 
 		echo "	COSMO analysis selected"
@@ -29,34 +29,82 @@ while getopts "ceht:m:z:" opt; do
 		THRES=${OPTARG}
 		(( t >= 0 && t <= 1 )) || 
 		echo "	[-t] Enter a value between 0 and 1 for moods thresholding. Default is 0.8" 
+		exit 1
 		;;
-	m)
-		MODE=${OPTARG}
-		(( m == 1 || m == 2)) || 
-		echo "	[-m]: Enter 1 for a monomer to monomer COSMO run. Enter 2 to 
-				run COSMO on the top two 4 mers from dimer site. Default is 2"
-		;;
+	# m)
+		# MODE=${OPTARG}
+		# if [ "$MODE" -eq 1 ] 
+		# then
+			# echo "	Running COSMO monomer to monomer."
+		# elif [ "$MODE" == 2 ]
+		# then
+			# echo "	Running COSMO on top two 4mers from dimer site."
+		# else
+			# echo "	[-m]: Enter 1 for a monomer to monomer COSMO run. Enter 2 to 
+		# run COSMO on the top two 4 mers from dimer site. Default is 2" &&
+			# exit 1
+		# fi
+		# ;;
 	z)
 		Zero_link=${OPTARG}
 		ZeroTag=$( echo ${Zero_link} | cut -d '_' -f 2 )
 		;;
-	?)
-		echo 	
-		"Script usage:
-		
-		Program run options: 
-		Default: all analyses run
-		[-h] HOMER de novo motif analysis only run.
-		[-e] Enrichment analysis only run, requires Homer de novo motif files.
-		[-c] COSMO only run, requires Homer de novo motif files.
-		
-		Additional options
-		[-z] Initial library cycle download link for normalization. If not provided,
-			uses cycle 1 library for normalization.
-		[-t] Motif threshold for MOODS. Must be a value between 0 and 1. 
-			Default is 0.8.
-		[-m] COSMO motif run option. Enter 1 for a monomer to monomer COSMO run. Enter 2 to 
-			run COSMO on the top two 4 mers from dimer site. Default is 2."
+	p)
+		PWM_file=${OPTARG}
+		if [ ! -d "$PWM_file" ]; then
+			echo "	[-p]: Enter a directory of motifs if you would like to use a motif generator other than HOMER."
+			exit 1
+		else
+			echo "	$PWM_file will be used for analysis."			
+		fi
+		;;
+	b)
+		Fastq_bg=${OPTARG}
+		if [ ! -e "$Fastq_bg" ]; then
+			echo " [-b]: Enter a fastq.gz file from the initial library of HT-SELEX."
+			exit 1
+		fi
+		;;
+	?)			
+		echo "	Usage to download ENA files: homer_runs.sh OPTIONS [ANALYSIS NAME] [Download link of Cycle 1 of ENA]" 
+		echo "	Usage without downloading ENA files: homer_runs.sh OPTIONS [ANALYSIS NAME]"
+		echo "		Program expects: "
+		echo "			TF"
+		echo "			├── Cycle1"
+		echo "			│   └── [Cycle1].fastq.gz"
+		echo "			├── Cycle2"
+		echo "			│   └── [Cycle2].fastq.gz"
+		echo "			├── Cycle3"
+		echo "			│   └── [Cycle3].fastq.gz"
+		echo "			├── Cycle4"
+		echo "			    └── [Cycle4].fastq.gz"
+		echo ""
+		echo ""
+		echo "	Program run options: "
+		echo "	Default: all analyses run"
+		echo "	[-h] HOMER de novo motif analysis only run."
+		echo "	[-e] Enrichment analysis only run, requires Homer de novo motif files."
+		echo "	[-c] COSMO only run, requires Homer de novo motif files."
+		echo "	"
+		echo "	Additional options:"
+		echo "	[-z] Initial library cycle download link for normalization. If no download link"
+		echo "		 or file [-b] provided, program uses cycle 1 library for normalization."
+		echo "	[-b] Enter a fastq.gz file from the initial library of HT-SELEX. If no download link [-z]"
+		echo "		 or file provided, program uses cycle 1 library for normalization"
+		echo "	[-t] Motif threshold for MOODS. Must be a value between 0 and 1. "
+		echo "		Default is 0.8."
+		# echo "	[-m] COSMO motif run option. Enter 1 for a monomer to monomer COSMO run. Enter 2 to "
+		# echo "		run COSMO on the top two 4 mers from dimer site. Default is 2.:"
+		echo "	[-p]: Enter a motif file if you would like to use a motif generator "
+		echo "		other than HOMER. This will overwrite -h option."
+		echo ""		
+		echo "	Program requirements:"
+		echo "	1. HOMER"
+		echo "	2. COSMO"
+		echo "	3. Python 2.7" 
+		echo "	4. Python 3 "
+		echo ""; echo ""
+		exit 1
 		;;
 	esac
 done
@@ -65,7 +113,7 @@ shift $((OPTIND-1))
 
 ## Bring in arguments
 TF=${1:?Expected TF as argument #1}
-Target_link=${2:?Expected ENA ftp download link for cycle 1 as argument #2}
+if [ ! -z "$2" ]; then Target_link=${2:?Expected ENA ftp download link for cycle 1 as argument #2}; fi
 
 cd "$BASEDIR"
 
@@ -78,13 +126,18 @@ then
 	hflag=true
 fi
 
-## Check for de novo motif analyses if -h not given
-if [ "$hflag" != "true" ] && [ -e "$TF"/Cycle4/"$TF"_4_homer_denovo_long/homerResults.txt ]
+if [ ! -z ${PWM_file+x} ]
 then
-	echo ""
-else
-	echo "	Cannot find a previous de novo motif analysis. Will run HOMER de novo"
-	hflag=true
+	echo "	Motif file given. Program will not run HOMER de novo."
+	hflag=""
+fi
+
+## Check for de novo motif analyses if -h not given
+if [ -z ${PWM_file+x} ] && [ ! "$hflag" = true ] && [ ! -e "$TF"/Cycle4/"$TF"_4_homer_denovo_long/homerResults.txt ]
+then
+	echo "	Cannot find a previous de novo motif analysis. Exiting. 
+	Please select -h to run Homer de novo motif analysis or -p to enter your own motif file."
+	exit 1
 fi
 
 #####################################
@@ -164,15 +217,17 @@ do
 done
 
 ## Download cycle 0 file if necessary
-cd "$BASEDIR"
+cd "$BASEDIR"; echo ""; Rounds=( 1 2 3 4 )
 
 if [ ! -e */"ZeroCycle_${ZeroTag}_0_0.fastq.gz" ] && [ ! -z ${Zero_link+x} ]
 then
 	## Zero cycle not yet downloaded but link was given: download initial cycle	
+	echo "	Zero cycle file link given. Downloading file..."
 	mkdir "$ZeroTag"; cd "$ZeroTag"
 	wget -nv "$Zero_link"
 	cd "$BASEDIR"/"$ZeroTag"
 	Fastq_bg=$( ls *.fastq.gz )
+	ZeroTag=$(find $(pwd) | grep ${Fastq_bg} )
 	if gzip --test "${Fastq_bg}"
 	then
 		echo "	${Fastq_bg} downloaded successfully."
@@ -183,34 +238,70 @@ then
 		exit 1
 	fi
 
-elif [ -z ${Zero_link+x} ]
+elif [ -z ${Zero_link+x} ] && [ ! -e "$Fastq_bg" ]
 then
-	## Zero link was not given. Copy first cycle library to use as control
+	## No existing file. Zero link was not given. Copy first cycle library to use as control
+	echo "No zero cycle given"
 	ZeroTag=$( echo ${Target_link} | tr '_', '\n' | grep .0N )
 	Fastq_bg="${Fastq_target[1]}"
+	Rounds=( 2 3 4 )
 	mkdir "$ZeroTag"
 	cp "$BASEDIR"/"$TF"/Cycle1/"${Fastq_target[1]}" "$ZeroTag"
+	ZeroTag=$(find $(pwd) | grep ${Fastq_bg} )
 
 elif [ -e */"ZeroCycle_${ZeroTag}_0_0.fastq.gz" ]
 then
 	## Zero cycle library already downloaded. Check file integrity
+	echo "	Zero cycle given. Checking file integrity..."
 	cd "$BASEDIR"/"$ZeroTag"
-	Fastq_bg=$( ls *.fastq.gz )
+	Fastq_bg=$( find "$ZeroTag"/*.fastq.gz )
+	ZeroTag=$(find $(pwd) | grep ${Fastq_bg} )
 	if gzip --test "${Fastq_bg}"
 	then
-		echo "	${Fastq_bg} downloaded successfully."
+		echo "	${Fastq_bg} file intact."
 	else 
 		echo "	Download of Zero tag file was unsuccessful"
 		cd ..
 		rm -rf "$ZeroTag"
 		exit 1
 	fi
+
+elif [ -e "$Fastq_bg" ]
+then
+	## If initial library was given
+	echo "	Zero cycle given. Checking file integrity..."
+	ZeroTag=$(find $(pwd) | grep ${Fastq_bg} )
+	if gzip --test "${Fastq_bg}"
+	then
+		echo "	${Fastq_bg} file intact."
+	else 
+		echo "	Download of Zero tag file was unsuccessful"
+		cd ..
+		rm -rf "$ZeroTag"
+		exit 1
+	fi	
+
 fi
 
+Zero_dir=$(dirname "$ZeroTag")
 
-#####################################
-###### HOMER de novo analysis  ######
-#####################################
+
+## Prep PWM directory
+if [ -d "$BASEDIR"/"$PWM_file" ]
+then
+	echo ""
+	cd "$BASEDIR"/"$TF"/Cycle4; mkdir -p "${TF}_4_homer_denovo_long/homerResults/PWMs"
+	ls "$BASEDIR"/"$PWM_file" | grep .motif | grep -v site | grep -v RV | while read dmotifs;
+	do 
+		cp "$BASEDIR"/"$PWM_file"/"$dmotifs" \
+			"$BASEDIR"/"$TF"/Cycle4/"${TF}_4_homer_denovo_long/homerResults/PWMs/"
+	done
+		
+fi	
+
+# #####################################
+# ###### HOMER de novo analysis  ######
+# #####################################
 
 if [ "$hflag" = "true" ]
 then
@@ -232,22 +323,25 @@ then
 
 	## Convert zipped fastq files to fasta for cycle 4, extract 50k sequences (sampling)
 	cd "$BASEDIR"/"$TF"/"Cycle4"
-	zcat "${Fastq_target[4]}" > "${TF}_${ZeroTag}_4.fastq" 
-	paste - - - - < "${TF}_${ZeroTag}_4.fastq" | shuf | cut -f 1,2 |\
-	sed 's/^@/>/' | tr "\t" "\n" | head -100000 > "${TF}_${ZeroTag}_4.fa"
-	rm "${TF}_${ZeroTag}_4.fastq"
+	zcat "${Fastq_target[4]}" > "${TF}_4.fastq" 
+	paste - - - - < "${TF}_4.fastq" | shuf | cut -f 1,2 |\
+	sed 's/^@/>/' | tr "\t" "\n" | head -100000 > "${TF}_4.fa"
+	rm "${TF}_4.fastq"
 
 	## De novo motif analysis of cycle 4 long
 	echo "	Starting de novo motif analysis for Cycle4 for 16-18 bp sequences"
 	echo "	This could take a while..."
-	findMotifs.pl "${TF}_${ZeroTag}_4.fa" fasta "${TF}_4_homer_denovo_long" \
+	findMotifs.pl "${TF}_4.fa" fasta "${TF}_4_homer_denovo_long" \
 	-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" \
 	-noredun -len 16,18 -noknown -p 4
-	rm "${TF}_${ZeroTag}_4.fa"
+	rm "${TF}_4.fa"
 
 	python "$CODEDIR"/htmltotext.py \
 		"${TF}_4_homer_denovo_long"/homerResults.html \
 		"${TF}_4_homer_denovo_long"/homerResults.txt 
+	
+	mkdir "${TF}_4_homer_denovo_long/PWMs"; cd "${TF}_4_homer_denovo_long/PWMs"
+	cp ../motif[0-9]..motif .
 		
 	## Define spacer based on consensus sequence of top motif, generate COSMO motif files
 	cd "$BASEDIR"/"$TF"
@@ -277,9 +371,9 @@ then
 	fi
 fi
 
-#####################################
-####### Enrichment analysis  ########
-#####################################
+# #####################################
+# ####### Enrichment analysis  ########
+# #####################################
 
 if [ "$eflag" = "true" ]
 then
@@ -293,39 +387,39 @@ then
 	module purge
 	module load homer/4.9-wrl
 	module load python3
-		
-	if [ -z ${Zero_link+x} ]
-	then
-		Rounds=( 2 3 4 )
-	else
-		Rounds=( 1 2 3 4 )
-	fi
 	
 	## Define spacer based on consensus sequence of top motif, generate COSMO motif files
 	cd "$BASEDIR"/"$TF"
 	if [ ! -s long_motif_consensus.txt ]
 	then
-		python "$CODEDIR"/Consensus_sequence_search.py -c
-		cd Cycle4
+		if [ -d "$BASEDIR"/"$PWM_file" ]
+		then
+			python "$CODEDIR"/Consensus_sequence_search.py -cp
+		else
+			python "$CODEDIR"/Consensus_sequence_search.py -c
+		fi
+		
+		count=0
+		mkdir "PWMs_of_dimers"; cd Cycle4
 		if [ -e "${TF}_4_homer_denovo_long"/D_site_motif.txt ]
 		then
 			cat "${TF}_4_homer_denovo_long"/D_site_motif.txt | while read line;
 			do
+				count=$(( count + 1 ))
 				## Copy relevant motifs to TF directory
-				l_motif_number=$( echo $line | cut -d . -f 1 | cut -d f -f 2 )
-				cp "${TF}_4_homer_denovo_long/homerResults/$line" \
-					"$BASEDIR"/"$TF"/dimer_"$l_motif_number".motif
+				cp "${TF}_4_homer_denovo_long/homerResults/PWMs/$line" \
+					"$BASEDIR"/"$TF"/"PWMs_of_dimers"/"dimer_${line}"
 				
 				## Convert half sites to motif files		
-				seq2profile.pl $( head -"$l_motif_number" "$BASEDIR"/"$TF"/long_motif_consensus.txt |\
-					tail -1 | head -c 4 ) > "$BASEDIR"/"$TF"/site1_dimer_"$l_motif_number".motif
+				seq2profile.pl $( head -"$count" "$BASEDIR"/"$TF"/long_motif_consensus.txt |\
+					tail -1 | head -c 4 ) > "$BASEDIR"/"$TF"/"PWMs_of_dimers"/site1_dimer_"$line"
 				
-				seq2profile.pl $( head -"$l_motif_number" "$BASEDIR"/"$TF"/long_motif_consensus.txt |\
+				seq2profile.pl $( head -"$count"  "$BASEDIR"/"$TF"/long_motif_consensus.txt |\
 					tail -1 | tail -c 5 | head -c 4 ) >\
-					"$BASEDIR"/"$TF"/site2_dimer_"$l_motif_number".motif
+					"$BASEDIR"/"$TF"/"PWMs_of_dimers"/site2_dimer_"$line"
 					
 			done
-		rm "${TF}_4_homer_denovo_long"/D_site_motif.txt
+		# rm "${TF}_4_homer_denovo_long"/D_site_motif.txt
 		fi
 	fi
 
@@ -341,11 +435,11 @@ then
 	 
 		
 	## Convert zipped fastq files to fasta for zero cycle
-	cd "$BASEDIR"/"$ZeroTag"
-	zcat "$Fastq_bg" > "${ZeroTag}.fastq"
-	paste - - - - < "${ZeroTag}.fastq" | cut -f 1,2 | sed 's/^@/>/' |\
-	tr "\t" "\n" > "${ZeroTag}.fa"
-	rm "${ZeroTag}.fastq"
+	cd "$Zero_dir"
+	zcat "$Fastq_bg" > "${TF}_0.fastq"
+	paste - - - - < "${TF}_0.fastq" | cut -f 1,2 | sed 's/^@/>/' |\
+	tr "\t" "\n" > "${TF}_0.fa"
+	rm "${TF}_0.fastq"
 	
 	
 	## Search motifs at every cycle
@@ -355,22 +449,22 @@ then
 		echo "	Searching for monomers and dimers in cycle $Cycle ..."
 		## Convert fastq file to fasta file
 		cd "$BASEDIR"/"$TF"/"Cycle${Cycle}"
-		zcat "${Fastq_target[$Cycle]}" > "${TF}_${ZeroTag}_${Cycle}.fastq"
-		paste - - - - < "${TF}_${ZeroTag}_${Cycle}.fastq" | cut -f 1,2 |\
-		sed 's/^@/>/' |	 tr "\t" "\n" > "${TF}_${ZeroTag}_${Cycle}.fa"
-		rm "${TF}_${ZeroTag}_${Cycle}.fastq"
+		zcat "${Fastq_target[$Cycle]}" > "${TF}_${Cycle}.fastq"
+		paste - - - - < "${TF}_${Cycle}.fastq" | cut -f 1,2 |\
+		sed 's/^@/>/' |	 tr "\t" "\n" > "${TF}_${Cycle}.fa"
+		rm "${TF}_${Cycle}.fastq"
 
 		## Search every dimer motif
-		ls .. | grep dimer_..motif | grep -v site | while read dmotifs;
+		ls ../"PWMs_of_dimers" | grep .motif | grep -v site | while read dmotifs;
 		do
-			dmotif_number=$( echo $dmotifs | cut -d . -f 1 | cut -d f -f 2 )
+			dmotif_number=$( echo $dmotifs | cut -d . -f 1  )
 			
 			## Find prevalence of half site 1
-			findMotifs.pl "${TF}_${ZeroTag}_${Cycle}.fa" fasta  \
+			findMotifs.pl "${TF}_${Cycle}.fa" fasta  \
 			"${TF}_${Cycle}_site1_${dmotif_number}_mask_homer" \
-			-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" -nomotif \
-			-mknown "$BASEDIR"/"$TF"/site1_"$dmotifs" -noweight  \
-			-maskMotif "$BASEDIR"/"$TF"/"$dmotifs"
+			-fasta "$Zero_dir"/"${TF}_0.fa" -nomotif \
+			-mknown "$BASEDIR"/"$TF"/"PWMs_of_dimers"/site1_"$dmotifs" -noweight  \
+			-maskMotif "$BASEDIR"/"$TF"/"PWMs_of_dimers"/"$dmotifs"
 			
 			## Convert knownResults.html to text file
 			python "$CODEDIR"/htmltotext.py \
@@ -379,11 +473,11 @@ then
 			
 
 			## Find prevalence of half site 2
-			findMotifs.pl "${TF}_${ZeroTag}_${Cycle}.fa" fasta  \
+			findMotifs.pl "${TF}_${Cycle}.fa" fasta  \
 			"${TF}_${Cycle}_site2_${dmotif_number}_mask_homer" \
-			-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" -nomotif \
-			-mknown "$BASEDIR"/"$TF"/site2_"$dmotifs" -noweight  \
-			-maskMotif "$BASEDIR"/"$TF"/"$dmotifs"
+			-fasta "$Zero_dir"/"${TF}_0.fa" -nomotif \
+			-mknown "$BASEDIR"/"$TF"/"PWMs_of_dimers"/site2_"$dmotifs" -noweight  \
+			-maskMotif "$BASEDIR"/"$TF"/"PWMs_of_dimers"/"$dmotifs"
 			
 			## Convert knownResults.html to text file
 			python "$CODEDIR"/htmltotext.py \
@@ -391,10 +485,10 @@ then
 				"${TF}_${Cycle}_site2_${dmotif_number}_mask_homer"/knownResults.txt 
 			
 			## Find prevalence of Cycle 4 long motifs
-			findMotifs.pl "${TF}_${ZeroTag}_${Cycle}.fa" fasta  \
+			findMotifs.pl "${TF}_${Cycle}.fa" fasta  \
 			"${TF}_${Cycle}_${dmotif_number}_homer" \
-			-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" -nomotif \
-			-mknown "$BASEDIR"/"$TF"/"$dmotifs" -noweight
+			-fasta "$Zero_dir"/"${TF}_0.fa" -nomotif \
+			-mknown "$BASEDIR"/"$TF"/"PWMs_of_dimers"/"$dmotifs" -noweight
 
 
 			## Convert knownResults.html to text file
@@ -405,16 +499,17 @@ then
 		done
 	done 
 
-	rm "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa"
+	rm "$Zero_dir"/"${TF}_0.fa"
+	rm "$BASEDIR"/"$TF"/Cycle"${Cycle}"/"${TF}_${Cycle}.fa"
 	cd "$BASEDIR"/"$TF"
 	python "$CODEDIR"/Dimer_enrichment_calculator.py
 
 fi 
 
 
-#####################################
-###########     COSMO     ###########
-#####################################
+# #####################################
+# ###########     COSMO     ###########
+# #####################################
 
 if [ "$cflag" = "true" ]
 then
@@ -433,8 +528,25 @@ then
 	then
 		echo "	Motifs for COSMO have been generated."
 	else
-		python "$CODEDIR"/Consensus_sequence_search.py -c
+		if [ -d "$BASEDIR"/"$PWM_file" ]
+		then
+			python "$CODEDIR"/Consensus_sequence_search.py -cp
+		else
+			python "$CODEDIR"/Consensus_sequence_search.py -c
+		fi
+	
+		mkdir "PWMs_of_dimers"; cd Cycle4
+		if [ -e "${TF}_4_homer_denovo_long"/D_site_motif.txt ]
+		then
+			cat "${TF}_4_homer_denovo_long"/D_site_motif.txt | while read line;
+			do
+				## Copy relevant motifs to TF directory
+				cp "${TF}_4_homer_denovo_long/homerResults/PWMs/$line" \
+					"$BASEDIR"/"$TF"/"PWMs_of_dimers"/"dimer_${line}"
+			done
+		fi
 	fi
+	
 	
 	if [ $( head -1 long_motif_consensus.txt ) = 'N/A' ]
 	then
@@ -444,7 +556,7 @@ then
 	fi
 
 	## Set variables
-	DIST=20; echo "	The max spacer distance is set to 10."
+	DIST=10; echo "	The max spacer distance is set to 10."
 	if [ -z ${THRES+x} ]
 	then
 		echo "	A default of 0.8 being used for motif threshold."
@@ -483,20 +595,20 @@ then
 		## Run COSMO on all dimer site motifs		
 		ls "$BASEDIR"/"$TF" | grep top_dimer_kmer_motifs | while read dmotifs
 		do 
-			dimer=$( echo $dmotifs | cut -d _ -f 5,6 )				
+			dimer=$( echo $dmotifs | cut -d _ -f 5-10 | cut -d . -f 1 )				
 			cd "$BASEDIR"
 			
 			## Run COSMO on zero cycle if applicable
-			if [ -e "$ZeroTag"/"ZeroCycle_${ZeroTag}_0_0.fastq.gz" ] && [ "$Cycle" -eq 0 ]
+			if [ -e "$Zero_dir"/"$Fastq_bg" ] && [ "$Cycle" -eq 0 ]
 			then		
-				cd "$BASEDIR"/"$ZeroTag"
-				zcat "$Fastq_bg" > "${ZeroTag}.fastq"
-				paste - - - - < "${ZeroTag}.fastq" | cut -f 1,2 | sed 's/^@/>/' |\
+				cd "$Zero_dir"
+				zcat "$Fastq_bg" > "${TF}_0.fastq"
+				paste - - - - < "${TF}_0.fastq" | cut -f 1,2 | sed 's/^@/>/' |\
 					tr "\t" "\n" | awk 'NR %2 {print ">chr" (NR+1)/2 ":1-40"} NR %2-1 {print $0}' \
-					> "${ZeroTag}.fa"
-				rm "${ZeroTag}.fastq"
+					> "${TF}_0.fa"
+				rm "${TF}_0.fastq"
 							
-				"$CODEDIR"/../COSMO/cosmo/cosmo_v1.py --fasta "${ZeroTag}.fa" \
+				"$CODEDIR"/../COSMO/cosmo/cosmo_v1.py --fasta "${TF}_0.fa" \
 				--threshold "$THRES" --distance "$DIST" -p "$BASEDIR"/"$TF"/"$dmotifs"/
 				
 				if [ ! -d "$BASEDIR"/"$TF"/Cycle0 ]
@@ -504,34 +616,34 @@ then
 					mkdir "$BASEDIR"/"$TF"/Cycle0
 				fi
 				
-				mkdir "$BASEDIR"/"$TF"/Cycle0/"$TF"_"$Cycle"_"$dimer"_homer
-				mv cosmo.counts.tab "$BASEDIR"/"$TF"/Cycle0/"$TF"_"$Cycle"_"$dimer"_homer/
-				cd "$BASEDIR"/"$TF"/Cycle0/"$TF"_"$Cycle"_"$dimer"_homer/
+				mkdir "$BASEDIR"/"$TF"/Cycle0/"$TF"_"$Cycle"_"$dimer"
+				mv cosmo.counts.tab "$BASEDIR"/"$TF"/Cycle0/"$TF"_"$Cycle"_"$dimer"/
+				cd "$BASEDIR"/"$TF"/Cycle0/"$TF"_"$Cycle"_"$dimer"/
 			fi
 			
 			if [ "$Cycle" -gt 0 ]
 			then
 				## Convert fastq file to fasta file for non-zero cycles
 				cd "$BASEDIR"/"$TF"/Cycle"$Cycle"
-				zcat "${Fastq_target[$Cycle]}" > "${TF}_${ZeroTag}_${Cycle}.fastq"
-				paste - - - - < "${TF}_${ZeroTag}_${Cycle}.fastq" | cut -f 1,2 |\
+				zcat "${Fastq_target[$Cycle]}" > "${TF}_${Cycle}.fastq"
+				paste - - - - < "${TF}_${Cycle}.fastq" | cut -f 1,2 |\
 					sed 's/^@/>/' |	 tr "\t" "\n" | \
 					awk 'NR %2 {print ">chr" (NR+1)/2 ":1-40"} NR %2-1 {print $0}' \
-					> "${TF}_${ZeroTag}_${Cycle}.fa"	
-				rm "${TF}_${ZeroTag}_${Cycle}.fastq"
+					> "${TF}_${Cycle}.fa"	
+				rm "${TF}_${Cycle}.fastq"
 				
 				## Run foreground scan
 				"$CODEDIR"/../COSMO/cosmo/cosmo_v1.py --fasta \
-					"$BASEDIR"/"$TF"/Cycle"$Cycle"/"${TF}_${ZeroTag}_${Cycle}.fa" \
+					"$BASEDIR"/"$TF"/Cycle"$Cycle"/"${TF}_${Cycle}.fa" \
 					--threshold "$THRES" --distance "$DIST" -p ../"$dmotifs"/
 					
 				# Move results corresponding folder
-				if [ -d "$TF"_"$Cycle"_"$dimer"_homer ]
+				if [ -d "$TF"_"$Cycle"_"$dimer" ]
 				then
-					mv cosmo.counts.tab "$TF"_"$Cycle"_"$dimer"_homer/ 
+					mv cosmo.counts.tab "$TF"_"$Cycle"_"$dimer"/ 
 				else
-					mkdir "$TF"_"$Cycle"_"$dimer"_homer
-					mv cosmo.counts.tab "$TF"_"$Cycle"_"$dimer"_homer/
+					mkdir "$TF"_"$Cycle"_"$dimer"
+					mv cosmo.counts.tab "$TF"_"$Cycle"_"$dimer"/
 				fi
 				
 				# Run 30 background scans
@@ -561,7 +673,7 @@ then
 				
 			fi
 			
-			cd "$BASEDIR"/"$TF"/Cycle"$Cycle"/"$TF"_"$Cycle"_"$dimer"_homer
+			cd "$BASEDIR"/"$TF"/Cycle"$Cycle"/"$TF"_"$Cycle"_"$dimer"
 			grep "motif1.jpwm|motif1.jpwm|FF" cosmo.counts.tab > "Cycle${Cycle}_motif1_motif1_FF.tab"
 			grep "motif2.jpwm|motif2.jpwm|FF" cosmo.counts.tab > "Cycle${Cycle}_motif2_motif2_FF.tab"
 			grep "motif1.jpwm|motif2.jpwm|FF" cosmo.counts.tab > "Cycle${Cycle}_motif1_motif2_FF.tab"
@@ -599,9 +711,10 @@ then
 	fi
 	
 	## Organize COSMO output
-	ls | grep top_dimer_kmer_motifs | cut -d _ -f 5,6 | while read dmotifs
+	ls | grep top_dimer_kmer_motifs | while read dmotifs
 	do
-		mv "$TF"_"$dmotifs"* top_dimer_kmer_motifs_"$dmotifs"/
+		dimer=$( echo $dmotifs | cut -d _ -f 5-10 | cut -d . -f 1 )
+		mv "$TF"_"$dimer"* top_dimer_kmer_motifs_"$dimer"/
 		# mv site?_"$dmotifs".motif top_dimer_kmer_motifs_"$dmotifs"/
 	done
 fi 

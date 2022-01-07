@@ -33,7 +33,7 @@ def parsing_half_sites(site):
     
     
     ## Read consensus sequence directly from motif file    
-    with open(path + '/' + site + '_' + dimers + '.motif') as file:
+    with open(path + '/PWMs_of_dimers/' + site + '_' + dimers + '.motif') as file:
         Consensus_seq = file.readline().split('\t')[1]
         nmatches = 0
         for match in re.finditer('W|R|Y|S|K|M|B|D|H|V|N', Consensus_seq):
@@ -131,7 +131,7 @@ with open(file_top_long,'r') as long_consensus:
 d_count = -1
 
 Cycle1 = True
-dimer_motifs = path + '/dimer_[0-9].motif'
+dimer_motifs = path + '/PWMs_of_dimers/dimer*'
 for dimers in sorted(glob.glob(dimer_motifs)):
     d_count += 1
     
@@ -160,7 +160,7 @@ for dimers in sorted(glob.glob(dimer_motifs)):
         c = str(c)
         file = path+'/Cycle'+c+'/'+TF+'_'+c+'_' + dimers + '_homer/knownResults.txt'
         
-        with open(path + '/' + dimers + '.motif') as dimer_motif:
+        with open(path + '/PWMs_of_dimers/' + dimers + '.motif') as dimer_motif:
             Consensus_seq_dim = dimer_motif.readline().split('\t')[1]
             Consensus_seq_dim = Consensus_seq_dim.split('-')[1]
             Consensus_seq_dim = Consensus_seq_dim.split(',')[0]

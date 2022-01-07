@@ -13,12 +13,14 @@ library("outliers")
 ## Create an error traceback
 options(error=traceback)
 
+TF = basename(getwd())
 c = 1
-dimers = list.files(pattern = '^dimer_[0-9]\\.motif$')
+setwd('PWMs_of_dimers')
+dimers = list.files(pattern = '^dimer*')
 print(dimers)
 
 ## Prep output log
-TF = basename(getwd())
+setwd("..")
 COSMO_output_file = paste(getwd(),'/',TF,'_COSMO_run_summary_wgrubbs.txt', sep = "")
 sink(COSMO_output_file, append = FALSE)
 cat(paste('TF','Dimer site','Chi-square', 'Chi-square post hoc no correction', 'Chi-square post hoc bonferroni correction', 'Grubbs test', 'Top spacer found', 'Z-test result (p)', sep = "\t"))
@@ -39,9 +41,9 @@ sink()
 
 for ( dimer in dimers )
 	{
-	dimer_number = parse_number(dimer)
+	dimer_name = sub('\\.motif$', '', dimer)
 	## Read in table
-	pattern2search = paste(dimer_number, '_', 'COSMO_counts_motif1_motif2_FF.txt', sep = "")
+	pattern2search = paste(dimer_name, '_', 'COSMO_counts_motif1_motif2_FF.txt', sep = "")
 	File = list.files(pattern = pattern2search)
 	counts = read.table(File, sep = "")
 	Cycle0_4 = rbind( head(counts, n = 1), tail(counts, n = 1) )
