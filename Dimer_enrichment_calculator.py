@@ -107,7 +107,7 @@ def fit_lines(cy, Fold_change):
 ## Prepare log file
 Run_summary = path + '/' + TF + '_Enrichment_analysis_run_summary.txt'
 with open(Run_summary,'w') as log:
-    log.write('TF\tDimer site\tCooperativity factor\tConsensus dimer sequence'+
+    log.write('TF\tPWM\tDimer site\tCooperativity factor\tConsensus dimer sequence'+
     '\tDimer slope\tRsq\t' + 
     'Consensus half site 1\tHalf site 1 slope\tRsq\t'+
     'Consensus half site 2\tHalf site 2 slope\tRsq\t'+
@@ -217,7 +217,7 @@ for dimers in sorted(glob.glob(dimer_motifs)):
         os.rmdir(export_path)
         os.remove(dimers + '.motif')
         with open(Run_summary,'a') as log:
-            log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
+            log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
             '\t'+str(Consensus_seq_dim)+'\t\t\t'
             +str(Consensus_seq_mon)+'\t\t\t'+ str(Consensus_seq_mon2) + 
             '\t\t\t' + str(np.round(Target_percent_mon,2))+'\t'
@@ -236,7 +236,7 @@ for dimers in sorted(glob.glob(dimer_motifs)):
         os.rmdir(export_path)
         os.remove(dimers + '.motif')
         with open(Run_summary,'a') as log:
-            log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
+            log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
             '\t'+str(Consensus_seq_dim)+'\t\t\t'
             +str(Consensus_seq_mon)+'\t\t\t'+ str(Consensus_seq_mon2) + 
             '\t\t\t' + str(np.round(Target_percent_mon,2))+'\t'
@@ -251,7 +251,7 @@ for dimers in sorted(glob.glob(dimer_motifs)):
         notes.append('Dimer appeared in ' + str(len(Target_percent_dim)) + ' cycles. Exiting')
         print('\tDimer appeared in ' + str(len(Target_percent_dim)) + ' cycles. Exiting')
         with open(Run_summary,'a') as log:
-            log.write(TF+'\t'+ str(dimer_site)+'\t' + str(0) + '\t\t\t\t\t\t\t\t\t\t\t\t\t\t' + 
+            log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t' + str(0) + '\t\t\t\t\t\t\t\t\t\t\t\t\t\t' + 
                 str(notes) + '\n')
         continue
 
@@ -289,7 +289,7 @@ for dimers in sorted(glob.glob(dimer_motifs)):
     if np.all(np.isnan(Fold_change_mon[1:])) and np.all(np.isnan(Fold_change_mon2[1:])):
         print('\tExiting.')
         with open(Run_summary,'a') as log:
-            log.write(TF+'\t'+ str(dimer_site)+'\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t' + 
+            log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t' + 
                 str(notes) + '\n')
         continue
     
@@ -366,7 +366,7 @@ for dimers in sorted(glob.glob(dimer_motifs)):
 
     ## Write to log
     with open(Run_summary,'a') as log:
-        log.write(TF+'\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
+        log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t' + str(dimer_site)+'\t'+str(Cooperative) + 
         '\t'+str(Consensus_seq_dim)+'\t'+str(np.round(slope_dim,2))+'\t'+str(np.round(R2_dim,4))+
         '\t'+str(Consensus_seq_mon)+'\t'+slope_mon+'\t'+R2_mon+
         '\t'+str(Consensus_seq_mon2)+'\t'+slope_mon2+'\t'+R2_mon2+

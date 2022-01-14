@@ -23,7 +23,7 @@ print(dimers)
 setwd("..")
 COSMO_output_file = paste(getwd(),'/',TF,'_COSMO_run_summary_wgrubbs.txt', sep = "")
 sink(COSMO_output_file, append = FALSE)
-cat(paste('TF','Dimer site','Chi-square', 'Chi-square post hoc no correction', 'Chi-square post hoc bonferroni correction', 'Grubbs test', 'Top spacer found', 'Z-test result (p)', sep = "\t"))
+cat(paste('TF','PWM','Dimer site','Chi-square', 'Chi-square post hoc no correction', 'Chi-square post hoc bonferroni correction', 'Grubbs test', 'Top spacer found', 'Z-test result (p)', sep = "\t"))
 cat("\n")
 
 
@@ -39,8 +39,9 @@ if ( readLines('long_motif_consensus.txt') == 'N/A')
 
 sink()
 
-for ( dimer in dimers )
+for ( dimer in sort(dimers) )
 	{
+	print(dimer)
 	dimer_name = sub('\\.motif$', '', dimer)
 	## Read in table
 	pattern2search = paste(dimer_name, '_', 'COSMO_counts_motif1_motif2_FF.txt', sep = "")
@@ -106,7 +107,7 @@ for ( dimer in dimers )
 
 	## Write data to file
 	sink(COSMO_output_file, append = TRUE)
-	cat(paste(TF, long_consensus, round(chi_tot_pvalue,4) , chi_spac, chi_spac_bon, p_grubbs, top_spac, p_spac, sep = "\t"))
+	cat(paste(TF, dimer_name, long_consensus, round(chi_tot_pvalue,4) , chi_spac, chi_spac_bon, p_grubbs, top_spac, p_spac, sep = "\t"))
 	cat("\t")
 	# cat(unlist(COSMO_zstats),sep = "\t")
 	cat("\n")

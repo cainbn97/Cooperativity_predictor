@@ -47,19 +47,20 @@ for export_path_COSMO in sorted(glob.glob(COSMO_output)):
 
 ## Prepare log file
 with open(path + '/dimer_description_check.txt', 'a') as log :
-    log.write('TF\tDimer site\tTop site: Spacer/flank\tTop site average\tSpacer/flank score\tTop site 1 score\tTop site 2 score\tlogP\tTarget percentage\t Background percentage\n')
+    log.write('TF\tPWM\tDimer site\tTop site: Spacer/flank\tTop site average\tSpacer/flank score\tTop site 1 score\tTop site 2 score\tlogP\tTarget percentage\t Background percentage\n')
 
 ## Determine if there is a dimer site present in any de novo motif analyses
 D_site_found = False
-de_novo_motif_folder = path + '/Cycle4/' + TF +'_4_homer_denovo_long/homerResults/PWMs/*'
+de_novo_motif_folder = path + '/Cycle4/' + TF +'_4_homer_denovo_long/homerResults/PWMs/'
 ## Grab all motif files from de novo result
 count=0
-for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
-    print('Starting ', os.path.basename(de_novo_motifs))
-    motif_number = str(os.path.basename(de_novo_motifs)).split('.')[0]
+
+for de_novo_motifs in sorted(os.listdir(de_novo_motif_folder), key=str.casefold):
+    print('Starting ', de_novo_motifs)
+    motif_number = str(de_novo_motifs).split('.')[0]
     motif_number = count
 
-    with open(de_novo_motifs, 'r') as de_novo_motif_file:
+    with open(os.path.join(de_novo_motif_folder,de_novo_motifs), 'r') as de_novo_motif_file:
         ## Read through motif file by line
         c = 0
         motif_final = []
@@ -82,6 +83,11 @@ for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
 
     Found_sites_scores = []
     Seq_Score = []
+    
+    if len(seq) < (2*Site_length+2):
+        print('\n',de_novo_motifs,' is shorter than required.\nCurrent PWM length is ', len(seq), '. \nThe required PWM length is ',(2*Site_length+2), '.')
+        continue
+    
     ## Adjust frameshifts to grab overlapping motifs
     for k in np.arange(0,len(seq)+1- Site_length):
         score = []
@@ -149,7 +155,7 @@ for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
         D_site_found = True
         export_path = path + '/Cycle4/' + TF + '_4_homer_denovo_long/D_site_motif.txt'
         with open(export_path, 'a') as log:
-            log.write(os.path.basename(de_novo_motifs))
+            log.write(de_novo_motifs)
             log.write('\n')
             
         ## Define consensus sequence        
@@ -182,7 +188,7 @@ for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
             motif2 = motif.loc[motif2['Start']:motif2['End']]*100
             motif2 = motif2.transpose()
 
-            export_path_COSMO = path + '/top_dimer_kmer_motifs_dimer_' + os.path.basename(de_novo_motifs).split('.')[0] + '/'
+            export_path_COSMO = path + '/top_dimer_kmer_motifs_dimer_' + de_novo_motifs.split('.')[0] + '/'
             os.mkdir(export_path_COSMO)
             with open(export_path_COSMO + 'motif1.jpwm','w') as log:
                 log.write(motif1.to_string(index = False, header = False))
@@ -193,7 +199,7 @@ for de_novo_motifs in sorted(glob.glob(de_novo_motif_folder)):
         dimer_site = 'N/A'
     
     with open(path + '/dimer_description_check.txt', 'a') as log :
-        log.write(TF+ '\t' + dimer_site + '\t' + str(round(Top_sites_score/Other_scores,3)) + '\t' + str(round(Top_sites_score,3)) + '\t'
+        log.write(TF+ '\t' + de_novo_motifs + '\t' + dimer_site + '\t' + str(round(Top_sites_score/Other_scores,3)) + '\t' + str(round(Top_sites_score,3)) + '\t'
         + str(round(Other_scores,3)) + '\t' + str(round(top_site['Score'],3)) + '\t' + str(top_site2['Score']) + '\t' + logP + '\t' + Target + '\t' + Bg + '\n')
     
     
