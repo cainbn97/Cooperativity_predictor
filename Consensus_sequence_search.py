@@ -34,6 +34,9 @@ TF = os.path.basename(path)
 ## Remove past files if there are any from past runs
 if os.path.isfile(path + '/long_motif_consensus.txt') == True:
     os.remove(path + '/long_motif_consensus.txt')
+    
+if os.path.isfile(path + '/dimer_description_check.txt') == True:
+    os.remove(path + '/dimer_description_check.txt')
 
 if os.path.isfile(path + '/Cycle4/' + TF +  '_4_homer_denovo_long/D_site_motif.txt') == True:
     os.remove(path + '/Cycle4/' + TF + '_4_homer_denovo_long/D_site_motif.txt')
@@ -151,7 +154,7 @@ for de_novo_motifs in sorted(os.listdir(de_novo_motif_folder), key=str.casefold)
         Target = 'N/A'
         Bg = 'N/A'
         
-    if True: #Ratio >= Top2SpacThres and top_site['Score'] >= 0.6 and top_site2['Score'] >= 0.6 :
+    if Ratio >= Top2SpacThres and top_site['Score'] >= 0.6 and top_site2['Score'] >= 0.6 :
         D_site_found = True
         export_path = path + '/Cycle4/' + TF + '_4_homer_denovo_long/D_site_motif.txt'
         with open(export_path, 'a') as log:

@@ -17,7 +17,7 @@ TF = basename(getwd())
 c = 1
 setwd('PWMs_of_dimers')
 dimers = list.files(pattern = '^dimer*')
-print(dimers)
+# print(dimers)
 
 ## Prep output log
 setwd("..")
@@ -27,7 +27,7 @@ cat(paste('TF','PWM','Dimer site','Chi-square', 'Chi-square post hoc no correcti
 cat("\n")
 
 
-if ( readLines('long_motif_consensus.txt') == 'N/A')
+if ( readLines('long_motif_consensus.txt')[1] == 'N/A')
 {
 	cat(paste(TF,'No dimer site found', sep = "\t"))
 	cat('\n')

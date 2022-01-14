@@ -211,11 +211,11 @@ for dimers in sorted(glob.glob(dimer_motifs)):
         Cooperative = 0
         notes.append('Dimer motif at Cycle 4 had an enrichment of <5%.')
         print('\tDimer prevalence less than 5% - exiting')
-        export_path = 'top_dimer_kmer_motifs_' + dimers
-        os.remove(os.path.join(export_path, 'motif1.jpwm'))
-        os.remove(os.path.join(export_path, 'motif2.jpwm'))
-        os.rmdir(export_path)
-        os.remove(dimers + '.motif')
+        # export_path = 'top_dimer_kmer_motifs_' + dimers
+        # os.remove(os.path.join(export_path, 'motif1.jpwm'))
+        # os.remove(os.path.join(export_path, 'motif2.jpwm'))
+        # os.rmdir(export_path)
+        os.remove(path + '/PWMs_of_dimers/dimer_' + dimers + '.motif')
         with open(Run_summary,'a') as log:
             log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
             '\t'+str(Consensus_seq_dim)+'\t\t\t'
@@ -230,11 +230,11 @@ for dimers in sorted(glob.glob(dimer_motifs)):
         Cooperative = 0
         notes.append('Dimer motif at Cycle 4 had an enrichment of <5%.')
         print('\tDimer prevalence less than 5% - exiting')
-        export_path = 'top_dimer_kmer_motifs_' + dimers
-        os.remove(os.path.join(export_path, 'motif1.jpwm'))
-        os.remove(os.path.join(export_path, 'motif2.jpwm'))
-        os.rmdir(export_path)
-        os.remove(dimers + '.motif')
+        # export_path = 'top_dimer_kmer_motifs_' + dimers
+        # os.remove(os.path.join(export_path, 'motif1.jpwm'))
+        # os.remove(os.path.join(export_path, 'motif2.jpwm'))
+        # os.rmdir(export_path)
+        os.remove(path + '/PWMs_of_dimers/' + dimers + '.motif')
         with open(Run_summary,'a') as log:
             log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
             '\t'+str(Consensus_seq_dim)+'\t\t\t'
