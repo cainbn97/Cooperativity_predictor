@@ -132,7 +132,7 @@ d_count = -1
 
 Cycle1 = True
 dimer_motifs = path + '/PWMs_of_dimers/dimer*'
-for dimers in sorted(glob.glob(dimer_motifs)):
+for dimers in sorted(glob.glob(dimer_motifs), key=str.casefold):
     d_count += 1
     
     print(f'\tStarting parsing for {os.path.basename(dimers)} homer runs...') 
