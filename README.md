@@ -10,12 +10,12 @@ We suggest running both the [`enrichment analysis`](#Enrichment analysis) and [`
 1. [HOMER 4.9](http://homer.ucsd.edu/homer/introduction/install.html)
 	- Requires below line changes in findKnownMotifs.pl to eliminate divide by zero error. 
 
-```
+
 | Line number | Original                                                                     | Required new line
 | 152 --------| $totalNumTargets = floor($numTargets/($percentTargets\*0.01)+0.5);           | $totalNumTargets = floor($numTargets/($percentTargets\*0.01+0.0005));
 | 153         | $totalNumBackground = floor($numBackground/($percentBackground\*0.01)+0.5);  | $totalNumBackground = floor($numBackground/($percentBackground\*0.01+0.0005));
 
-```
+
 
 2. COSMO (will need to link)
 	- Python 2.7
@@ -61,27 +61,20 @@ The program will automatically determine the download links for the remaining cy
 Cooperativity_predictor.sh OPTIONS [ANALYSIS NAME]
 ```
 
-Program expects the files to be in the following layout
-	
-	Analysis name
-	
-	├── Cycle1
-	
-	│   └── \[Cycle1\].fastq.gz
-	
-	
-	├── Cycle2
-	
-	│   └── \[Cycle2\].fastq.gz
-	
-	├── Cycle3
-	
-	│   └── \[Cycle3\].fastq.gz
-	
-	├── Cycle4
-	
+Program expects the files to be in the following layout:
+
+```
+	Analysis name	
+	├── Cycle1	
+	│   └── \[Cycle1\].fastq.gz		
+	├── Cycle2	
+	│   └── \[Cycle2\].fastq.gz	
+	├── Cycle3	
+	│   └── \[Cycle3\].fastq.gz	
+	├── Cycle4	
 	   └── \[Cycle4\].fastq.gz
 
+```
 
 ### Program run options
 
@@ -106,28 +99,21 @@ Additional options:
 ### Dimer search
 
 1. dimer_description_check.txt
-- Gives Site:Non-site and site specific nucleotide impacts for each dimer site
+	- Gives Site:Non-site and site specific nucleotide impacts for each dimer site
 2. *If COSMO analysis specificed* top_dimer_kmer_motifs_\[motif\]
-- Contains Jaspar formatted PWMs for COSMO analysis
+	- Contains Jaspar formatted PWMs for COSMO analysis
 3. long_motif_consensus.txt
-- This is more of an intermediate file. It contains the found dimer sites. 
+	- This is more of an intermediate file. It contains the found dimer sites. 
 
 **Output organization**
 
-	Analysis
-
-	├── top_dimer_kmer_motifs_\[motif\]
-
-	└── motif1.jpwm
-
-	│	└── motif2.jpwm
-
-	├── dimer_description_check.txt
-
-	├── long_motif_consensus.txt
-
-	...
-
+&emsp; Analysis
+&emsp;├── top_dimer_kmer_motifs_\[motif\]
+&emsp;└── motif1.jpwm
+&emsp;│	└── motif2.jpwm
+&emsp;├── dimer_description_check.txt
+&emsp;├── long_motif_consensus.txt
+&emsp;...
 	
 
 
@@ -162,11 +148,11 @@ Additional options:
 	
 **Example of enrichment plot**
 
-	![Enrichment_sample](Enrichment_plot_sample.png)
+![Enrichment_sample](Enrichment_plot_sample.png)
 
 ### COSMO analysis
 
-1. \[Analysis\]\_COSMO_run_summary_wgrubbs.txt
+1. *Analysis*\_COSMO_run_summary_wgrubbs.txt
 2. Raw COSMO output and tabbed files separated by motif combination for each cycle and dimer site motif
 3. Dimer site counts found by COSMO for each motif combination for each dimer site motif
 	- x-axis: spacer length
@@ -181,25 +167,25 @@ Additional options:
 
 	├── top_dimer_kmer_motifs_dimer1
 
-	│   └── Analysis_dimer1_motif1_motif1_FF_cosmo_output.png
+	│   └── *Analysis*\_dimer1_motif1_motif1_FF_cosmo_output.png
 
-	│	└── Analysis_dimer1_motif1_motif2_FF_cosmo_output.png
+	│	└── *Analysis*\_dimer1_motif1_motif2_FF_cosmo_output.png
 
-	│	└── Analysis_dimer1_motif2_motif1_FF_cosmo_output.png
+	│	└── *Analysis*\_dimer1_motif2_motif1_FF_cosmo_output.png
 
-	│	└── Analysis_dimer1_motif2_motif2_FF_cosmo_output.png
+	│	└── *Analysis*\_dimer1_motif2_motif2_FF_cosmo_output.png
 
 	│	└── motif1.jpwm
 
 	│	└── motif2.jpwm
 
-	│	└── Analysis_dimer1_motif1_motif1_FF.txt
+	│	└── *Analysis*\_dimer1_motif1_motif1_FF.txt
 
-	│	└── Analysis_dimer1_motif1_motif2_FF.txt
+	│	└── *Analysis*\_dimer1_motif1_motif2_FF.txt
 
-	│	└── Analysis_dimer1_motif2_motif1_FF.txt
+	│	└── *Analysis*\_dimer1_motif2_motif1_FF.txt
 
-	│	└── Analysis_dimer1_motif2_motif2_FF.txt
+	│	└── *Analysis*\_dimer1_motif2_motif2_FF.txt
 
 	├── Cycle1
 
@@ -223,8 +209,8 @@ Additional options:
 
 	
 **Example of COSMO heatmap**
-	
-	![COSMO_heatmap](COSMO_heatmap_sample.png)
+
+![COSMO_heatmap](COSMO_heatmap_sample.png)
 
 ## Authors
 
