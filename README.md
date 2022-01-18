@@ -108,11 +108,17 @@ Additional options:
 **Output organization**
 
 &emsp; Analysis
+
 &emsp;├── top_dimer_kmer_motifs_\[motif\]
+
 &emsp;└── motif1.jpwm
+
 &emsp;│	└── motif2.jpwm
+
 &emsp;├── dimer_description_check.txt
+
 &emsp;├── long_motif_consensus.txt
+
 &emsp;...
 	
 
