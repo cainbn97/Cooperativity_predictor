@@ -54,14 +54,14 @@ with open(path + '/dimer_description_check.txt', 'a') as log :
 
 ## Determine if there is a dimer site present in any de novo motif analyses
 D_site_found = False
-de_novo_motif_folder = path + '/Cycle4/' + TF +'_4_homer_denovo_long/homerResults/PWMs/'
+de_novo_motif_folder = path + '/Cycle4/' + TF +'_4_homer_denovo_long/PWMs/'
 ## Grab all motif files from de novo result
 count=0
+
 
 for de_novo_motifs in sorted(os.listdir(de_novo_motif_folder), key=str.casefold):
     print('Starting ', de_novo_motifs)
     motif_number = str(de_novo_motifs).split('.')[0]
-    motif_number = count
 
     with open(os.path.join(de_novo_motif_folder,de_novo_motifs), 'r') as de_novo_motif_file:
         ## Read through motif file by line
@@ -136,11 +136,10 @@ for de_novo_motifs in sorted(os.listdir(de_novo_motif_folder), key=str.casefold)
     Other_scores = Max_bp.sum(axis = 0) / Max_bp.shape[0]
     Ratio = np.around(Top_sites_score/Other_scores, decimals = 1)
     
-    
-    if PWM == False:
+    if ( PWM == False ):
         with open(path + '/Cycle4/' + TF +'_4_homer_denovo_long/homerResults.txt','r') as read:
             for line in read:
-                if line.split('\t')[0] == motif_number:
+                if line.split('\t')[0] == str(count+1):
                     if line.split('\t')[1] == '*':
                         logP = line.split('\t')[3]
                         Target = line.split('\t')[4]
@@ -206,11 +205,11 @@ for de_novo_motifs in sorted(os.listdir(de_novo_motif_folder), key=str.casefold)
         + str(round(Other_scores,3)) + '\t' + str(round(top_site['Score'],3)) + '\t' + str(top_site2['Score']) + '\t' + logP + '\t' + Target + '\t' + Bg + '\n')
     
     
-    count=+1
+    count+=1
     print('\n\n')
 
 export_path = path + '/long_motif_consensus.txt'
 if D_site_found == False:
-    print('No dimer sites found in any de novo motif analyses. Exiting')
+    print('\tNo dimer sites found in any de novo motif analyses. Exiting')
     with open(export_path,'w') as log:
         log.write('N/A')

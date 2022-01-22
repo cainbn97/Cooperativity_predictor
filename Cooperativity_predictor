@@ -14,7 +14,7 @@ CODEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ## Implement a switch to allow COSMO and enrichment script to be run separately
 cflag='';eflag='';hflag=''
 	
-while getopts "ceht:z:p:b:" opt; do
+while getopts "ceht:z:p:b:k:" opt; do
 	case $opt in
 	c) cflag=true 
 		echo "	COSMO analysis selected"
@@ -65,9 +65,17 @@ while getopts "ceht:z:p:b:" opt; do
 			exit 1
 		fi
 		;;
+	k)
+		CONFIG=${OPTARG}
+		if [ ! -e "$CONFIG" ]; then
+			echo "	[-k] Enter a configuation file to find COSMO and python3 installations."
+			echo "	THIS IS REQUIRED FOR A COSMO RUN."
+			exit 1
+		fi
+		;;
 	?)			
-		echo "	Usage to download ENA files: homer_runs.sh OPTIONS [ANALYSIS NAME] [Download link of Cycle 1 of ENA]" 
-		echo "	Usage without downloading ENA files: homer_runs.sh OPTIONS [ANALYSIS NAME]"
+		echo "	Usage to download ENA files: Cooperativity_predictor OPTIONS [ANALYSIS NAME] [Download link of Cycle 1 of ENA]"; echo ""; echo ""
+		echo "	Usage without downloading ENA files: Cooperativity_predictor OPTIONS [ANALYSIS NAME]"
 		echo "		Program expects: "
 		echo "			TF"
 		echo "			├── Cycle1"
@@ -95,8 +103,10 @@ while getopts "ceht:z:p:b:" opt; do
 		echo "		Default is 0.8."
 		# echo "	[-m] COSMO motif run option. Enter 1 for a monomer to monomer COSMO run. Enter 2 to "
 		# echo "		run COSMO on the top two 4 mers from dimer site. Default is 2.:"
-		echo "	[-p]: Enter a motif file if you would like to use a motif generator "
+		echo "	[-p] Enter a motif file if you would like to use a motif generator "
 		echo "		other than HOMER. This will overwrite -h option."
+		echo "	[-k] Enter a configuation file to find COSMO and python3 installations."
+		echo "		THIS IS REQUIRED FOR A COSMO RUN."
 		echo ""		
 		echo "	Program requirements:"
 		echo "	1. HOMER"
@@ -139,6 +149,20 @@ then
 	Please select -h to run Homer de novo motif analysis or -p to enter your own motif file."
 	exit 1
 fi
+
+## Check if configuration file was given for COSMO
+if [ "$cflag" = "true" ] && [ -e "$CONFIG" ]
+then
+	echo "	Configuration file $CONFIG will be used for COSMO run"
+	COSMO_VENV_PATH=$( grep COSMO_VENV "$CONFIG" | cut -f 2 )
+	COSMO_VENV_PATH=$( dirname "$COSMO_VENV_PATH" )
+	COSMO_loc=$( grep COSMO_PATH "$CONFIG" | cut -f 2 )
+	
+else
+	echo "	A configuration file is required for COSMO run."; exit 1
+fi
+exit 1
+
 
 #####################################
 ## ACQUIRE FASTQ FROM ENA DATABASE ##
@@ -290,11 +314,11 @@ Zero_dir=$(dirname "$ZeroTag")
 if [ -d "$BASEDIR"/"$PWM_file" ]
 then
 	echo ""
-	cd "$BASEDIR"/"$TF"/Cycle4; mkdir -p "${TF}_4_homer_denovo_long/homerResults/PWMs"
+	cd "$BASEDIR"/"$TF"/Cycle4; mkdir -p "${TF}_4_homer_denovo_long/PWMs"
 	ls "$BASEDIR"/"$PWM_file" | grep .motif | grep -v site | grep -v RV | while read dmotifs;
 	do 
 		cp "$BASEDIR"/"$PWM_file"/"$dmotifs" \
-			"$BASEDIR"/"$TF"/Cycle4/"${TF}_4_homer_denovo_long/homerResults/PWMs/"
+			"$BASEDIR"/"$TF"/Cycle4/"${TF}_4_homer_denovo_long/PWMs/"
 	done
 		
 fi	
@@ -309,17 +333,13 @@ then
 	
 	
 		"
-
-	## Load important modules
-	module load homer/4.9
-	module load python3
-
+	
 	## Convert zipped fastq files to fasta for zero cycle
-	cd "$BASEDIR"/"$ZeroTag"
-	zcat "$Fastq_bg" > "${ZeroTag}.fastq"
-	paste - - - - < "${ZeroTag}.fastq" | shuf | cut -f 1,2 | sed 's/^@/>/' |\
-	tr "\t" "\n" | head -100000 > "${ZeroTag}.fa"
-	rm "${ZeroTag}.fastq"
+	cd "$Zero_dir"
+	zcat "$Fastq_bg" > "${TF}_0.fastq"
+	paste - - - - < "${TF}_0.fastq" | cut -f 1,2 | sed 's/^@/>/' |\
+	tr "\t" "\n" > "${TF}_0.fa"
+	rm "${TF}_0.fastq"
 
 	## Convert zipped fastq files to fasta for cycle 4, extract 50k sequences (sampling)
 	cd "$BASEDIR"/"$TF"/"Cycle4"
@@ -332,7 +352,7 @@ then
 	echo "	Starting de novo motif analysis for Cycle4 for 16-18 bp sequences"
 	echo "	This could take a while..."
 	findMotifs.pl "${TF}_4.fa" fasta "${TF}_4_homer_denovo_long" \
-	-fasta "$BASEDIR"/"${ZeroTag}"/"${ZeroTag}.fa" \
+	-fasta "$Zero_dir"/"${TF}_0.fa" \
 	-noredun -len 16,18 -noknown -p 4
 	rm "${TF}_4.fa"
 
@@ -341,34 +361,34 @@ then
 		"${TF}_4_homer_denovo_long"/homerResults.txt 
 	
 	mkdir "${TF}_4_homer_denovo_long/PWMs"; cd "${TF}_4_homer_denovo_long/PWMs"
-	cp ../motif[0-9]..motif .
+	cp ../homerResults/motif[0-9].motif .
 		
 	## Define spacer based on consensus sequence of top motif, generate COSMO motif files
 	cd "$BASEDIR"/"$TF"
 	python "$CODEDIR"/Consensus_sequence_search.py -c
 
-	cd Cycle4
-	
-	if [ -e "${TF}_4_homer_denovo_long"/D_site_motif.txt ]
-	then
-		cat "${TF}_4_homer_denovo_long"/D_site_motif.txt | while read line;
-		do
-			## Copy relevant motifs to TF directory
-			l_motif_number=$( echo $line | cut -d . -f 1 | cut -d f -f 2 )
-			cp "${TF}_4_homer_denovo_long/homerResults/$line" \
-				"$BASEDIR"/"$TF"/dimer_"$l_motif_number".motif
-			
-			## Convert half sites to motif files		
-			seq2profile.pl $( head -"$l_motif_number" "$BASEDIR"/"$TF"/long_motif_consensus.txt |\
-				tail -1 | head -c 4 ) > "$BASEDIR"/"$TF"/site1_dimer_"$l_motif_number".motif
-			
-			seq2profile.pl $( head -"$l_motif_number" "$BASEDIR"/"$TF"/long_motif_consensus.txt |\
-				tail -1 | tail -c 5 | head -c 4 ) >\
-				"$BASEDIR"/"$TF"/site2_dimer_"$l_motif_number".motif
+		count=0
+		mkdir "PWMs_of_dimers"; cd Cycle4
+		if [ -e "${TF}_4_homer_denovo_long"/D_site_motif.txt ]
+		then
+			cat "${TF}_4_homer_denovo_long"/D_site_motif.txt | while read line;
+			do
+				count=$(( count + 1 ))
+				## Copy relevant motifs to TF directory
+				cp "${TF}_4_homer_denovo_long/PWMs/$line" \
+					"$BASEDIR"/"$TF"/"PWMs_of_dimers"/"dimer_${line}"
 				
-		done
-		rm "${TF}_4_homer_denovo_long"/D_site_motif.txt
-	fi
+				## Convert half sites to motif files		
+				seq2profile.pl $( head -"$count" "$BASEDIR"/"$TF"/long_motif_consensus.txt |\
+					tail -1 | head -c 4 ) > "$BASEDIR"/"$TF"/"PWMs_of_dimers"/site1_dimer_"$line"
+				
+				seq2profile.pl $( head -"$count"  "$BASEDIR"/"$TF"/long_motif_consensus.txt |\
+					tail -1 | tail -c 5 | head -c 4 ) >\
+					"$BASEDIR"/"$TF"/"PWMs_of_dimers"/site2_dimer_"$line"
+					
+			done
+		# rm "${TF}_4_homer_denovo_long"/D_site_motif.txt
+		fi
 fi
 
 # #####################################
@@ -383,10 +403,6 @@ then
 
 		"
 
-	## Load important modules
-	module purge
-	module load homer/4.9-wrl
-	module load python3
 	
 	## Define spacer based on consensus sequence of top motif, generate COSMO motif files
 	cd "$BASEDIR"/"$TF"
@@ -407,7 +423,7 @@ then
 			do
 				count=$(( count + 1 ))
 				## Copy relevant motifs to TF directory
-				cp "${TF}_4_homer_denovo_long/homerResults/PWMs/$line" \
+				cp "${TF}_4_homer_denovo_long/PWMs/$line" \
 					"$BASEDIR"/"$TF"/"PWMs_of_dimers"/"dimer_${line}"
 				
 				## Convert half sites to motif files		
@@ -428,7 +444,6 @@ then
 	if [ $( head -1 long_motif_consensus.txt ) = 'N/A' ]
 	then
 		python "$CODEDIR"/Dimer_enrichment_calculator.py
-		module load R
 		Rscript "$CODEDIR"/chi-square.R
 		exit 1
 	fi
@@ -518,10 +533,9 @@ then
 	
 		"
 	echo "	Starting COSMO analysis..."
-	module purge
-	module load python3
-	module load R
 	
+	
+	## Find necessary path dependencies
 	cd "$BASEDIR"/"$TF"
 	
 	if [ -e long_motif_consensus.txt ]
@@ -541,7 +555,7 @@ then
 			cat "${TF}_4_homer_denovo_long"/D_site_motif.txt | while read line;
 			do
 				## Copy relevant motifs to TF directory
-				cp "${TF}_4_homer_denovo_long/homerResults/PWMs/$line" \
+				cp "${TF}_4_homer_denovo_long/PWMs/$line" \
 					"$BASEDIR"/"$TF"/"PWMs_of_dimers"/"dimer_${line}"
 			done
 		fi
@@ -582,9 +596,17 @@ then
 	echo ""
 	
 	## Activate virtual environment that contains MOODs
-	module purge
-	cd "$CODEDIR"/../COSMO/cosmo
-	source "$CODEDIR"/../COSMO/cosmo/venv/bin/activate
+	if [ -e "$CONFIG" ]
+	then
+		COSMOPATH=$( grep COSMO "$CONFIG" | cut -f 1 )
+	else
+		COSMOPATH=$( echo "$PATH" | tr : '\n' | grep -i cosmo )
+	fi
+	
+	## Save previous path
+	PYTHON3PATH="$PYTHONPATH"
+	PYTHONPATH="$COSMO_VENV_PATH"/bin
+	source "$COSMO_VENV_PATH"/bin/activate
 	
 	## Run COSMO on all cycles
 	Rounds=(0 1 2 3 4)
@@ -608,7 +630,7 @@ then
 					> "${TF}_0.fa"
 				rm "${TF}_0.fastq"
 							
-				"$CODEDIR"/../COSMO/cosmo/cosmo_v1.py --fasta "${TF}_0.fa" \
+				"$COSMO_loc"/cosmo_v1.py --fasta "${TF}_0.fa" \
 				--threshold "$THRES" --distance "$DIST" -p "$BASEDIR"/"$TF"/"$dmotifs"/
 				
 				if [ ! -d "$BASEDIR"/"$TF"/Cycle0 ]
@@ -616,9 +638,9 @@ then
 					mkdir "$BASEDIR"/"$TF"/Cycle0
 				fi
 				
-				mkdir "$BASEDIR"/"$TF"/Cycle0/"$TF"_"$Cycle"_"$dimer"
-				mv cosmo.counts.tab "$BASEDIR"/"$TF"/Cycle0/"$TF"_"$Cycle"_"$dimer"/
-				cd "$BASEDIR"/"$TF"/Cycle0/"$TF"_"$Cycle"_"$dimer"/
+				mkdir "$BASEDIR"/"$TF"/Cycle0/"$TF"_"$Cycle"_"$dimer"_COSMO
+				mv cosmo.counts.tab "$BASEDIR"/"$TF"/Cycle0/"$TF"_"$Cycle"_"$dimer"_COSMO/
+				cd "$BASEDIR"/"$TF"/Cycle0/"$TF"_"$Cycle"_"$dimer"_COSMO/
 			fi
 			
 			if [ "$Cycle" -gt 0 ]
@@ -633,47 +655,47 @@ then
 				rm "${TF}_${Cycle}.fastq"
 				
 				## Run foreground scan
-				"$CODEDIR"/../COSMO/cosmo/cosmo_v1.py --fasta \
+				"$COSMO_loc"/cosmo_v1.py --fasta \
 					"$BASEDIR"/"$TF"/Cycle"$Cycle"/"${TF}_${Cycle}.fa" \
 					--threshold "$THRES" --distance "$DIST" -p ../"$dmotifs"/
 					
 				# Move results corresponding folder
-				if [ -d "$TF"_"$Cycle"_"$dimer" ]
+				if [ -d "$TF"_"$Cycle"_"$dimer"_COSMO ]
 				then
-					mv cosmo.counts.tab "$TF"_"$Cycle"_"$dimer"/ 
+					mv cosmo.counts.tab "$TF"_"$Cycle"_"$dimer"_COSMO/ 
 				else
-					mkdir "$TF"_"$Cycle"_"$dimer"
-					mv cosmo.counts.tab "$TF"_"$Cycle"_"$dimer"/
+					mkdir "$TF"_"$Cycle"_"$dimer"_COSMO
+					mv cosmo.counts.tab "$TF"_"$Cycle"_"$dimer"_COSMO/
 				fi
 				
-				# Run 30 background scans
-				# if [ "$Cycle" -eq 4 ]
-				# then
-					# echo "	Running background scans on Cycle 4 for statistics."
-					# mkdir 'COSMO_bg_scans'; cd 'COSMO_bg_scans'
-					# shuffle_count=($(seq 1 1 30))
-					# for shuff in ${shuffle_count[@]}
-					# do
-						# echo "	Running bg scan $shuff"
-						# "$CODEDIR"/../COSMO/cosmo/cosmo_v1.py --fasta \
-						# ../"${TF}_${ZeroTag}_${Cycle}.fa" --number "$shuff" --threshold "$THRES" \
-						# --distance "$DIST" --pwmdir ../../"$dmotifs"/ --scramflag
-					# done
+				# # Run 30 background scans
+				# # if [ "$Cycle" -eq 4 ]
+				# # then
+					# # echo "	Running background scans on Cycle 4 for statistics."
+					# # mkdir 'COSMO_bg_scans'; cd 'COSMO_bg_scans'
+					# # shuffle_count=($(seq 1 1 30))
+					# # for shuff in ${shuffle_count[@]}
+					# # do
+						# # echo "	Running bg scan $shuff"
+						# # "$CODEDIR"/../COSMO/cosmo/cosmo_v1.py --fasta \
+						# # ../"${TF}_${ZeroTag}_${Cycle}.fa" --number "$shuff" --threshold "$THRES" \
+						# # --distance "$DIST" --pwmdir ../../"$dmotifs"/ --scramflag
+					# # done
 
-					# ## Run stats
-					# mv ../cosmo.counts.tab .
-					# "$CODEDIR"/../COSMO/cosmo/cosmostats_v1.py -N 30 \
-						# > "${TF}_${Cycle}_stats.txt"
-					# mv "${TF}_${Cycle}_stats.txt" ..
-					# mv cosmo.counts.tab ..
-					# cd ..
-				# fi
+					# # ## Run stats
+					# # mv ../cosmo.counts.tab .
+					# # "$CODEDIR"/../COSMO/cosmo/cosmostats_v1.py -N 30 \
+						# # > "${TF}_${Cycle}_stats.txt"
+					# # mv "${TF}_${Cycle}_stats.txt" ..
+					# # mv cosmo.counts.tab ..
+					# # cd ..
+				# # fi
 
 				# Organize output - not all palindromic - orientation matters
 				
 			fi
 			
-			cd "$BASEDIR"/"$TF"/Cycle"$Cycle"/"$TF"_"$Cycle"_"$dimer"
+			cd "$BASEDIR"/"$TF"/Cycle"$Cycle"/"$TF"_"$Cycle"_"$dimer"_COSMO
 			grep "motif1.jpwm|motif1.jpwm|FF" cosmo.counts.tab > "Cycle${Cycle}_motif1_motif1_FF.tab"
 			grep "motif2.jpwm|motif2.jpwm|FF" cosmo.counts.tab > "Cycle${Cycle}_motif2_motif2_FF.tab"
 			grep "motif1.jpwm|motif2.jpwm|FF" cosmo.counts.tab > "Cycle${Cycle}_motif1_motif2_FF.tab"
@@ -690,15 +712,14 @@ then
 	## Make heat maps - shows enrichment - no relevant statistics - 
 	## run all at once to avoid deactivating and inactivating COSMO a bunch
 	deactivate
-	module load python3
-	module load R
 
 	echo ""
 	echo "	Generating heatmaps..."
 	cd "$BASEDIR"/"$TF"
+	
+	## Generate heatmap
 	python "$CODEDIR"/heatmap_plotter.py 
 	
-
 	## Perform statistical analysis
 	echo "	Running stats..."
 

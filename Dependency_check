@@ -1,0 +1,69 @@
+#!/bin/bash 
+
+# Author: cainu5
+# Install check for pipeline run
+# 01/20/22
+
+while getopts ":k:" opt;
+do
+	case $opt in
+	k)	
+		CONFIG=${OPTARG}
+		if [ ! -e "$CONFIG" ]; then
+			echo " [-k]: Enter a CONFIG file to the dependency file path."
+			exit 1
+		fi
+		;;
+	esac
+done
+
+echo ""
+
+## Check python3
+echo "Checking python3 installation..."
+pip3 --version || { echo ""; echo ""; echo "Could not find a working python3 installation."; exit 1; }
+PYTHON3PATH="$PYTHONPATH"
+
+## Check python dependencies
+Packages=(scipy numpy pandas matplotlib seaborn beautifulsoup4 )
+
+echo ""
+echo "Checking for required python packages..."; echo ""
+echo ""
+for package in ${Packages[@]}
+do
+	if pip freeze | grep ${package}=; then echo "${package} installed"; echo ""; else echo "${package} installation not found"; echo ""; fi
+done
+
+## Check R
+echo "Checking R installation..."; echo ""
+R --version || { echo ""; echo ""; echo "Could not find a working R installation!";exit 1; }
+
+## Check R dependencies
+echo "Checking for required R packages..."
+Rscript Rpackage_check.R
+
+## Check Homer
+echo "Checking Homer installation..."; echo ""; echo ""; echo ""
+findMotifs.pl || { echo ""; echo ""; echo "Count not find a working Homer installation."; echo ""; }
+
+
+## Check COSMO
+echo "Sourcing COSMO virtual environment..."; echo ""
+
+if [ -e "$CONFIG" ]
+then
+	COSMO_VENV_PATH=$( grep COSMO_VENV "$CONFIG" | cut -f 2 )
+	COSMO_VENV_PATH=$( dirname "$COSMO_VENV_PATH" )
+	COSMO_loc=$( grep COSMO_PATH "$CONFIG" | cut -f 2 )
+	
+	echo "Checking COSMO installation..."; echo ""
+	PYTHONPATH="$COSMO_VENV_PATH"/bin
+	source "$COSMO_VENV_PATH"/bin/activate
+	"$COSMO_loc"/cosmo_v1.py --fasta
+
+	deactivate
+	pip3 --version && echo "Python3 still accessible after using virtual environment"
+else
+	echo "No configuration file given. COSMO installation was not checked."
+fi

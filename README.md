@@ -17,39 +17,57 @@ We suggest running both the enrichment analysis and COSMO analysis as they test 
 
 2. COSMO (will need to link once public)
 	- Python 2.7
-		- [MOODS 1.0.2.1](https://www.cs.helsinki.fi/group/pssmfind/)
-		- numpy 1.16.6
-		- scipy 1.2.3
-	- We suggest creating a virtual environment with these dependencies. 
+		- [MOODS (1.0.2.1)](https://www.cs.helsinki.fi/group/pssmfind/)
+		- numpy (1.16.6)
+		- scipy (1.2.3)
+	- We suggest creating a [virtual environment](https://docs.python.org/3/tutorial/venv.html) with these dependencies. 
 3. Python 3.7.1
-	- os
-	- numpy
-	- glob
-	- pandas 
-	- re
-	- argparse
-	- matplotlib
-	- scipy
-	- seaborn
-	- bs4
+	- os (base)
+	- numpy (1.21.2)
+	- glob (base)
+	- pandas (1.1.3)
+	- re (base)
+	- argparse (base)
+	- matplotlib (3.3.2)
+	- scipy (1.5.3)
+	- seaborn (0.11.0)
+	- bs4 (4.9.1)
 4. R 3.2.0
 	- [readr](https://cran.r-project.org/web/packages/readr/index.html)
 	- [outliers](https://cran.r-project.org/web/packages/outliers/index.html)
 	- [chisq.posthoc.test](https://cran.r-project.org/web/packages/chisq.posthoc.test/index.html)
 
+## Install
+This program is a wrapper around the previously mentioned packages. If you would like to check if these dependencies are functioning, you can run [source](`Dependency_check`) to check the installation of python, R, Homer, and COSMO, as well as the required python and R packages. Also the program expects a COSMO virtual environment given the current deprecated state of COSMO and MOODs.
+
+A CONFIG file is not required but highly recommended given the pipeline switches between Python 2 and Python 3. An example of a CONFIG file is below. COSMO_VENV is the absolute path to the location of the executable bin folder of the virtual environment and COSMO_PATH is the absolute path to the location of the COSMO package.
+
+```
+COSMO_VENV	/venv/bin
+COSMO_PATH	/COSMO
+```
+
+```bash
+./Dependency_check -k CONFIG.txt
+```
+
+*This will not install the necessary packages and software. It will only let you know if your packages and software are installed and accessible in your current environment.*
+
 ## Usage
 
 User can select to download HT-SELEX data associated with [DNA-Binding Specificities of Human Transcription Factors](http://dx.doi.org/10.1016/j.cell.2012.12.009) for analysis or use their own data. 
 
+This program is not computationally intensive if you are not running a HOMER de novo motif analysis. We suggest four processors and at least 30 gb of RAM if you are running a Homer de novo motif analysis and one processor at 4-8 gb of RAM if not. 
+
 ### Downloading HT-SELEX data from Jolma 2013
 
 ```bash
-Cooperativity_predictor.sh OPTIONS [ANALYSIS] [DOWNLOAD LINK OF CYCLE1 FILE]
+./Cooperativity_predictor OPTIONS [ANALYSIS] [DOWNLOAD LINK OF CYCLE1 FILE]
 ```
 
 For example,
 ```bash
-Cooperativity_predictor.sh GSX2 ftp.sra.ebi.ac.uk/vol1/run/ERR195/ERR195221/GSX2_TCCAAC20NCG_Y_1.fastq.gz
+./Cooperativity_predictor GSX2 ftp.sra.ebi.ac.uk/vol1/run/ERR195/ERR195221/GSX2_TCCAAC20NCG_Y_1.fastq.gz
 ```
 
 The program will automatically determine the download links for the remaining cycles. The initial library download link must be inputted separately.
@@ -57,7 +75,7 @@ The program will automatically determine the download links for the remaining cy
 ### Using downloaded or own HT-SELEX data
 
 ```bash
-Cooperativity_predictor.sh OPTIONS [ANALYSIS NAME]
+./Cooperativity_predictor OPTIONS [ANALYSIS NAME]
 ```
 
 Program expects the files to be in the following layout:
@@ -86,7 +104,8 @@ Additional options:
 [-z] Initial library cycle download link for normalization. If no download link or file [-b] provided, program uses cycle 1 library for normalization.
 [-b] Enter a fastq.gz file from the initial library of HT-SELEX. If no download link [-z] or file provided, program uses cycle 1 library for normalization.
 [-t] Motif threshold for MOODS. Must be a value between 0 and 1. Default is 0.8.
-[-p]: Enter a motif file if you would like to use a motif generator other than HOMER. This will overwrite -h option.
+[-p] Enter a motif file if you would like to use a motif generator other than HOMER. This will overwrite -h option.
+[-k] Enter a configuation file to find COSMO. THIS IS REQUIRED FOR A COSMO RUN."
 
 ```
 
@@ -108,7 +127,9 @@ We call the probability weight of the highest probable nucleotide at each positi
 3. long_motif_consensus.txt
 	- This is more of an intermediate file. It contains the found dimer sites. 
 
-*User can use their own PWM using the \[-p\] option. This motif must follow the [Homer motif format](http://homer.ucsd.edu/homer/motif/creatingCustomMotifs.html). It must be at least 10 nt in length*
+*User can use their own PWM using the \[-p\] option. This motif must follow the [Homer motif format](http://homer.ucsd.edu/homer/motif/creatingCustomMotifs.html) and be at least 10 nt in length*
+
+*We suggest four processors and at least 30 gb of RAM if you are running a Homer de novo motif analysis.* 
 
 **Output organization**
 
@@ -118,8 +139,14 @@ ANALYSIS
 	└── motif1.jpwm
 	└── motif2.jpwm
 ...
+├── Cycle4
+	└── homerResults
+	└── PWMs
+		└── motif1.motif
+		...
 ├── dimer_description_check.txt
 ├── long_motif_consensus.txt
+
 ```
 
 *Program will call a motif a dimer site if nucleotide impact for each site is greater than 0.6 and the site:non-site ratio is greater than 1.6.*

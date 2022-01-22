@@ -1,0 +1,2 @@
+COSMO_VENV	/cosmo/venv/bin
+COSMO_PATH	/cosmo
