@@ -41,7 +41,7 @@ for dimers in sorted(glob.glob(dimer_paths)):
     for site_type in orientation:
         for site in arrangement: 
 
-            files = path + '/Cycle[0-9]/*' + dimer + '/*' + site_type + '_' + site + '.tab'
+            files = path + '/Cycle[0-9]/*' + dimer + '_COSMO/*' + site_type + '_' + site + '.tab'
             matrix = pd.DataFrame(0, index=np.arange(0, end_index), columns = np.arange(1,11))
             cycle = []
             
@@ -75,6 +75,7 @@ for dimers in sorted(glob.glob(dimer_paths)):
             fig.savefig(filename)
             
             output = TF + '_' + dimer +  '_COSMO_counts_' + site_type + '_' + site + '.txt'
+            
             with open(output, 'w') as log:
                 log.write(matrix.to_string(index = True, header = True))
                 

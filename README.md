@@ -21,7 +21,7 @@ We suggest running both the enrichment analysis and COSMO analysis as they test 
 		- numpy (1.16.6)
 		- scipy (1.2.3)
 	- We suggest creating a [virtual environment](https://docs.python.org/3/tutorial/venv.html) with these dependencies. 
-3. Python 3.7.1
+3. Python (3.7.1)
 	- os (base)
 	- numpy (1.21.2)
 	- glob (base)
@@ -32,32 +32,39 @@ We suggest running both the enrichment analysis and COSMO analysis as they test 
 	- scipy (1.5.3)
 	- seaborn (0.11.0)
 	- bs4 (4.9.1)
-4. R 3.2.0
+4. R (3.2.0)
 	- [readr](https://cran.r-project.org/web/packages/readr/index.html)
 	- [outliers](https://cran.r-project.org/web/packages/outliers/index.html)
 	- [chisq.posthoc.test](https://cran.r-project.org/web/packages/chisq.posthoc.test/index.html)
 
 ## Install
-This program is a wrapper around the previously mentioned packages. If you would like to check if these dependencies are functioning, you can run [source](`Dependency_check`) to check the installation of python, R, Homer, and COSMO, as well as the required python and R packages. Also the program expects a COSMO virtual environment given the current deprecated state of COSMO and MOODs.
 
-A CONFIG file is not required but highly recommended given the pipeline switches between Python 2 and Python 3. An example of a CONFIG file is below. COSMO_VENV is the absolute path to the location of the executable bin folder of the virtual environment and COSMO_PATH is the absolute path to the location of the COSMO package.
+To acquire the repository:
+
+```bash
+git clone --recursive https://github.com/cainbn97/SELEX_analysis.git
+```
+
+This program is a wrapper around the previously mentioned packages. If you would like to check if these dependencies are functioning, you can run [Dependency_check](`Dependency_check`) to check the installation of python, R, Homer, and COSMO, as well as the required python and R packages. The program expects a COSMO virtual environment given the current deprecated state of the COSMO dependency, MOODs.
+
+```bash
+./Dependency_check -k CONFIG.txt
+```
+
+A CONFIG file is required to run COSMO to ensure the virtual environment is properly found and sourced. An example of a [CONFIG.txt](`CONFIG.txt`) is included and shown below. COSMO_VENV is the absolute path to the location of the executable bin folder of the virtual environment and COSMO_PATH is the absolute path to the location of the COSMO package/scripts.
 
 ```
 COSMO_VENV	/venv/bin
 COSMO_PATH	/COSMO
 ```
 
-```bash
-./Dependency_check -k CONFIG.txt
-```
-
-*This will not install the necessary packages and software. It will only let you know if your packages and software are installed and accessible in your current environment.*
+*This will not install the necessary packages and software. It will only let you know if the packages and software are installed and accessible in your current environment.*
 
 ## Usage
 
 User can select to download HT-SELEX data associated with [DNA-Binding Specificities of Human Transcription Factors](http://dx.doi.org/10.1016/j.cell.2012.12.009) for analysis or use their own data. 
 
-This program is not computationally intensive if you are not running a HOMER de novo motif analysis. We suggest four processors and at least 30 gb of RAM if you are running a Homer de novo motif analysis and one processor at 4-8 gb of RAM if not. 
+This program is not computationally intensive if you are not running a HOMER de novo motif analysis. We suggest four processors and at least 30 gb of RAM if you are running a Homer de novo motif analysis and one processor and 4-8 gb of RAM if not. 
 
 ### Downloading HT-SELEX data from Jolma 2013
 
@@ -113,7 +120,7 @@ Additional options:
 
 ### Dimer search
 
-We call the probability weight of the highest probable nucleotide at each position the nucleotide impact. The 2 nonoverlapping 4-mers with the highest average nucleotide impact were selected as half sites. 4-mers were used in this analysis as the conserved residues in the HD directly mediate contact with the core ‘TAAT’ 4-mer.  If the average nucleotide impact of the two half sites is 1.6 times greater than the nucleotide impacts of the surrounding flanking regions and spacer, and the average nucleotide impact for each of the two half sites is greater than 0.6, then the motif is considered a dimer site.
+We call the probability weight of the highest probable nucleotide at each position the nucleotide impact. The 2 nonoverlapping 4-mers with the highest average nucleotide impact will be selected as half sites. 4-mers are used in this analysis as the conserved residues in the HD directly mediate contact with the core ‘TAAT’ 4-mer.  If the average nucleotide impact of the two half sites is 1.6 times greater than the nucleotide impacts of the surrounding flanking regions and spacer, and the average nucleotide impact for each of the two half sites is greater than 0.6, then the motif is considered a dimer site.
 
 *These parameters can be adjusted to accomodate other transcription factor families and experimental designs.*
 
@@ -217,14 +224,12 @@ ANALYSIS
 │	└── ANALYSIS_dimer1_motif2_motif1_FF.txt
 │	└── ANALYSIS_dimer1_motif2_motif2_FF.txt
 ├── Cycle1
-│   └── ANALYSIS_1_dimer1_homer
+│   └── ANALYSIS_1_dimer1_COSMO
 │		└── cosmo.counts.tab
 │		└── Cycle1_motif1_motif1_FF.tab
 │		└── Cycle1_motif1_motif2_FF.tab
 │		└── Cycle1_motif2_motif1_FF.tab
 │		└── Cycle2_motif2_motif1_FF.tab
-│	└── ANALYSIS_1_site1_dimer1_homer
-│	└── ANALYSIS_1_site2_dimer1_homer
 ...
 ```
 	

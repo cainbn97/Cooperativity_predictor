@@ -143,7 +143,7 @@ then
 fi
 
 ## Check for de novo motif analyses if -h not given
-if [ -z ${PWM_file+x} ] && [ ! "$hflag" = true ] && [ ! -e "$TF"/Cycle4/"$TF"_4_homer_denovo_long/homerResults.txt ]
+if [ -z ${PWM_file+x} ] && [ ! "$hflag" = true ] && [ ! -e "$TF"/Cycle4/"$TF"_4_homer_denovo_long/homerResults.html ]
 then
 	echo "	Cannot find a previous de novo motif analysis. Exiting. 
 	Please select -h to run Homer de novo motif analysis or -p to enter your own motif file."
@@ -161,7 +161,6 @@ then
 else
 	echo "	A configuration file is required for COSMO run."; exit 1
 fi
-exit 1
 
 
 #####################################
@@ -659,7 +658,7 @@ then
 					"$BASEDIR"/"$TF"/Cycle"$Cycle"/"${TF}_${Cycle}.fa" \
 					--threshold "$THRES" --distance "$DIST" -p ../"$dmotifs"/
 					
-				# Move results corresponding folder
+				Move results corresponding folder
 				if [ -d "$TF"_"$Cycle"_"$dimer"_COSMO ]
 				then
 					mv cosmo.counts.tab "$TF"_"$Cycle"_"$dimer"_COSMO/ 
@@ -695,7 +694,7 @@ then
 				
 			fi
 			
-			cd "$BASEDIR"/"$TF"/Cycle"$Cycle"/"$TF"_"$Cycle"_"$dimer"_COSMO
+			cd "$BASEDIR"/"$TF"/Cycle"$Cycle"/"$TF"_"$Cycle"_"$dimer"_COSMO/
 			grep "motif1.jpwm|motif1.jpwm|FF" cosmo.counts.tab > "Cycle${Cycle}_motif1_motif1_FF.tab"
 			grep "motif2.jpwm|motif2.jpwm|FF" cosmo.counts.tab > "Cycle${Cycle}_motif2_motif2_FF.tab"
 			grep "motif1.jpwm|motif2.jpwm|FF" cosmo.counts.tab > "Cycle${Cycle}_motif1_motif2_FF.tab"

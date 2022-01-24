@@ -21,28 +21,47 @@ echo ""
 
 ## Check python3
 echo "Checking python3 installation..."
-pip3 --version || { echo ""; echo ""; echo "Could not find a working python3 installation."; exit 1; }
+pip3 --version || { 
+	echo ""; 
+	echo ""; 
+	echo "Could not find a working python3 installation.";
+	Pyth=false; }
 PYTHON3PATH="$PYTHONPATH"
 
+echo "$Pyth"
 ## Check python dependencies
-Packages=(scipy numpy pandas matplotlib seaborn beautifulsoup4 )
+if [ ! "$Pyth" = 'false' ]
+then
+	Packages=(scipy numpy pandas matplotlib seaborn beautifulsoup4 )
 
-echo ""
-echo "Checking for required python packages..."; echo ""
-echo ""
-for package in ${Packages[@]}
-do
-	if pip freeze | grep ${package}=; then echo "${package} installed"; echo ""; else echo "${package} installation not found"; echo ""; fi
-done
+	echo ""
+	echo "Checking for required python packages..."; echo ""
+	echo ""
+
+	for package in ${Packages[@]}
+	do
+		if pip freeze | grep ${package}=; then echo "${package} installed"; echo ""; else echo "${package} installation not found"; echo ""; fi
+	done
+
+fi
 
 ## Check R
 echo "Checking R installation..."; echo ""
-R --version || { echo ""; echo ""; echo "Could not find a working R installation!";exit 1; }
+R --version || { 
+	echo ""; echo ""; 
+	echo "Could not find a working R installation! Will not check for R packages."; 
+	echo ""; 
+	Rs=false;
+ }
 
 ## Check R dependencies
-echo "Checking for required R packages..."
-Rscript Rpackage_check.R
+if [ ! "$Rs" = 'false' ]
+then
+	echo "Checking for required R packages..."
+	Rscript Rpackage_check.R
+fi
 
+echo ""; echo ""; echo "" 
 ## Check Homer
 echo "Checking Homer installation..."; echo ""; echo ""; echo ""
 findMotifs.pl || { echo ""; echo ""; echo "Count not find a working Homer installation."; echo ""; }
@@ -62,6 +81,7 @@ then
 	source "$COSMO_VENV_PATH"/bin/activate
 	"$COSMO_loc"/cosmo_v1.py --fasta
 
+	echo ""; echo ""
 	deactivate
 	pip3 --version && echo "Python3 still accessible after using virtual environment"
 else
