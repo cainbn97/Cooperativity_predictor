@@ -74,7 +74,7 @@ This program is not computationally intensive if you are not running a HOMER de 
 
 For example,
 ```bash
-./Cooperativity_predictor GSX2 ftp.sra.ebi.ac.uk/vol1/run/ERR195/ERR195221/GSX2_TCCAAC20NCG_Y_1.fastq.gz
+./Cooperativity_predictor -che -k CONFIG.txt -z ftp.sra.ebi.ac.uk/vol1/run/ERR195/ERR195929/ZeroCycle_TCCAAC20NCG_0_0.fastq.gz GSX2 ftp.sra.ebi.ac.uk/vol1/run/ERR195/ERR195221/GSX2_TCCAAC20NCG_Y_1.fastq.gz
 ```
 
 The program will automatically determine the download links for the remaining cycles. The initial library download link must be inputted separately.

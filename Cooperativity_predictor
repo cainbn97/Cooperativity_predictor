@@ -62,6 +62,8 @@ while getopts "ceht:z:p:b:k:" opt; do
 		Fastq_bg=${OPTARG}
 		if [ ! -e "$Fastq_bg" ]; then
 			echo " [-b]: Enter a fastq.gz file from the initial library of HT-SELEX."
+			ZeroTag=$(find $(pwd) | grep ${Fastq_bg} )
+			Zero_dir=$(dirname "$ZeroTag")
 			exit 1
 		fi
 		;;
@@ -162,6 +164,11 @@ else
 	echo "	A configuration file is required for COSMO run."; exit 1
 fi
 
+if [ ! -z "${Zero_link+x}" ] && [ ! -z "${Fastq_bg+x}" ]
+then
+	echo "	Please enter either -b or -z. Only one initial library can be used."
+	exit 1
+fi
 
 #####################################
 ## ACQUIRE FASTQ FROM ENA DATABASE ##
@@ -213,6 +220,13 @@ do
 		## Make necessary directories and download files		
 		mkdir Cycle"$Cycle"; cd Cycle"$Cycle"; wget -nv ${LINKS[$(( $Cycle - 1 )) ]}
 		cd "$BASEDIR"/"$TF"
+		
+		file_check=$( ls -l *.fastq.gz 2>/dev/null | wc -l )
+		if [ "$file_check" != 0 ]
+		then
+			echo "	File failed to download..."; exit 1
+		fi
+		
 	fi
 done
 
@@ -242,7 +256,7 @@ done
 ## Download cycle 0 file if necessary
 cd "$BASEDIR"; echo ""; Rounds=( 1 2 3 4 )
 
-if [ ! -e */"ZeroCycle_${ZeroTag}_0_0.fastq.gz" ] && [ ! -z ${Zero_link+x} ]
+if [ ! -z ${Zero_link+x} ]
 then
 	## Zero cycle not yet downloaded but link was given: download initial cycle	
 	echo "	Zero cycle file link given. Downloading file..."
@@ -260,8 +274,9 @@ then
 		rm -rf "$ZeroTag"
 		exit 1
 	fi
-
-elif [ -z ${Zero_link+x} ] && [ ! -e "$Fastq_bg" ]
+	Zero_dir=$(dirname "$ZeroTag")
+	
+elif [ -z ${Zero_link+x} ] && [ -z ${Fastq_bg+x} ]
 then
 	## No existing file. Zero link was not given. Copy first cycle library to use as control
 	echo "No zero cycle given"
@@ -271,25 +286,9 @@ then
 	mkdir "$ZeroTag"
 	cp "$BASEDIR"/"$TF"/Cycle1/"${Fastq_target[1]}" "$ZeroTag"
 	ZeroTag=$(find $(pwd) | grep ${Fastq_bg} )
+	Zero_dir=$(dirname "$ZeroTag")
 
-elif [ -e */"ZeroCycle_${ZeroTag}_0_0.fastq.gz" ]
-then
-	## Zero cycle library already downloaded. Check file integrity
-	echo "	Zero cycle given. Checking file integrity..."
-	cd "$BASEDIR"/"$ZeroTag"
-	Fastq_bg=$( find "$ZeroTag"/*.fastq.gz )
-	ZeroTag=$(find $(pwd) | grep ${Fastq_bg} )
-	if gzip --test "${Fastq_bg}"
-	then
-		echo "	${Fastq_bg} file intact."
-	else 
-		echo "	Download of Zero tag file was unsuccessful"
-		cd ..
-		rm -rf "$ZeroTag"
-		exit 1
-	fi
-
-elif [ -e "$Fastq_bg" ]
+elif [ ! -z ${Fastq_bg+x} ]
 then
 	## If initial library was given
 	echo "	Zero cycle given. Checking file integrity..."
@@ -303,10 +302,9 @@ then
 		rm -rf "$ZeroTag"
 		exit 1
 	fi	
-
+	
 fi
 
-Zero_dir=$(dirname "$ZeroTag")
 
 
 ## Prep PWM directory
@@ -354,6 +352,12 @@ then
 	-fasta "$Zero_dir"/"${TF}_0.fa" \
 	-noredun -len 16,18 -noknown -p 4
 	rm "${TF}_4.fa"
+
+	if [ ! -e "${TF}_4_homer_denovo_long"/homerResults.html ]
+	then 
+		echo "	Something went wrong with the de novo motif analysis!!!"
+		exit 1
+	fi
 
 	python "$CODEDIR"/htmltotext.py \
 		"${TF}_4_homer_denovo_long"/homerResults.html \
@@ -480,11 +484,16 @@ then
 			-mknown "$BASEDIR"/"$TF"/"PWMs_of_dimers"/site1_"$dmotifs" -noweight  \
 			-maskMotif "$BASEDIR"/"$TF"/"PWMs_of_dimers"/"$dmotifs"
 			
+			if [ ! -e "${TF}_${Cycle}_site1_${dmotif_number}_mask_homer"/knownResults.html ]
+			then 
+				echo "	Something went wrong with homer!!!"
+				exit 1
+			fi
+			
 			## Convert knownResults.html to text file
 			python "$CODEDIR"/htmltotext.py \
 				"${TF}_${Cycle}_site1_${dmotif_number}_mask_homer"/knownResults.html \
 				"${TF}_${Cycle}_site1_${dmotif_number}_mask_homer"/knownResults.txt 
-			
 
 			## Find prevalence of half site 2
 			findMotifs.pl "${TF}_${Cycle}.fa" fasta  \
@@ -658,7 +667,7 @@ then
 					"$BASEDIR"/"$TF"/Cycle"$Cycle"/"${TF}_${Cycle}.fa" \
 					--threshold "$THRES" --distance "$DIST" -p ../"$dmotifs"/
 					
-				Move results corresponding folder
+				## Move results corresponding folder
 				if [ -d "$TF"_"$Cycle"_"$dimer"_COSMO ]
 				then
 					mv cosmo.counts.tab "$TF"_"$Cycle"_"$dimer"_COSMO/ 
