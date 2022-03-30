@@ -25,7 +25,7 @@ COSMO = bool(args.COSMO)
 PWM = bool(args.PWM)
 
 Site_length = 4
-Top2SpacThres = 1.6
+Top2SpacThres = 1.5
 
 ## Find and save necessary folders/paths
 path = os.getcwd()
@@ -134,7 +134,7 @@ for de_novo_motifs in sorted(os.listdir(de_novo_motif_folder), key=str.casefold)
     
     Top_sites_score = (top_site['Score'] + top_site2['Score'])/2
     Other_scores = Max_bp.sum(axis = 0) / Max_bp.shape[0]
-    Ratio = np.around(Top_sites_score/Other_scores, decimals = 1)
+    Ratio = Top_sites_score/Other_scores
     
     if ( PWM == False ):
         with open(path + '/Cycle4/' + TF +'_4_homer_denovo_long/homerResults.txt','r') as read:
