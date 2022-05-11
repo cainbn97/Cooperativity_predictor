@@ -4,6 +4,10 @@
 # Install check for pipeline run
 # 01/20/22
 
+## Grab important file paths
+BASEDIR="$(pwd)"
+CODEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 while getopts ":k:" opt;
 do
 	case $opt in
@@ -40,7 +44,7 @@ then
 
 	for package in ${Packages[@]}
 	do
-		if pip freeze | grep ${package}=; then echo "${package} installed"; echo ""; else echo "${package} installation not found"; echo ""; fi
+		if pip freeze | grep ^${package}=; then echo "${package} installed"; echo ""; else echo "${package} installation not found"; echo ""; fi
 	done
 
 fi
@@ -58,7 +62,7 @@ R --version || {
 if [ ! "$Rs" = 'false' ]
 then
 	echo "Checking for required R packages..."
-	Rscript Rpackage_check.R
+	Rscript "$CODEDIR"/Rpackage_check.R
 fi
 
 echo ""; echo ""; echo "" 
@@ -80,6 +84,8 @@ then
 	PYTHONPATH="$COSMO_VENV_PATH"/bin
 	source "$COSMO_VENV_PATH"/bin/activate
 	"$COSMO_loc"/cosmo_v1.py --fasta
+	
+	echo ""; echo "^^^Did you get the usage statement with 'argument -fa/--fasta: expected one argument'?"
 
 	echo ""; echo ""
 	deactivate
