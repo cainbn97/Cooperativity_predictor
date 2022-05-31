@@ -69,7 +69,13 @@ def parsing_half_sites(site):
                     Bg_percent_temp = line.split('\t')[7]
                     Bg_percent_mon.append(round(float(Bg_percent_temp.split('%')[0]),2))
                     
-                    Fold_change = Target_percent_mon[-1]/Bg_percent_mon[0]
+                    try:
+                        Fold_change = Target_percent_mon[-1]/Bg_percent_mon[0]
+                    except ZeroDivisionError: 
+                        Fold_change = Target_percent_mon[-1]/(Bg_percent_mon[0]+0.01)
+                        print('\tDivide by zero occurred on ', dimers,',',site,'.')
+                        notes.append(str('Divide by zero occurred on '+ dimers+ ','+ site+ '.'))
+                        
                     Fold_change_mon.append(Fold_change)
     
         ## Check lengths - some motifs will not be found at each cycle
@@ -208,16 +214,15 @@ for dimers in sorted(glob.glob(dimer_motifs), key=str.casefold):
 
     ## Check for prevalence of dimer site at cycle 4 - where de novo motif found
     if len(Target_percent_dim) == 0:
-        Cooperative = 0
-        notes.append('Dimer motif at Cycle 4 had an enrichment of <5%.')
-        print('\tDimer prevalence less than 5% - exiting')
+        notes.append('Dimer did not appear in any of the cycles.')
+        print('\tDimer did not appear in any of the cycles.')
         # export_path = 'top_dimer_kmer_motifs_' + dimers
         # os.remove(os.path.join(export_path, 'motif1.jpwm'))
         # os.remove(os.path.join(export_path, 'motif2.jpwm'))
         # os.rmdir(export_path)
-        os.remove(path + '/PWMs_of_dimers/dimer_' + dimers + '.motif')
+        os.remove(path + '/PWMs_of_dimers/' + dimers + '.motif')
         with open(Run_summary,'a') as log:
-            log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
+            log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t'+str(" ") + 
             '\t'+str(Consensus_seq_dim)+'\t\t\t'
             +str(Consensus_seq_mon)+'\t\t\t'+ str(Consensus_seq_mon2) + 
             '\t\t\t' + str(np.round(Target_percent_mon,2))+'\t'
@@ -236,7 +241,7 @@ for dimers in sorted(glob.glob(dimer_motifs), key=str.casefold):
         # os.rmdir(export_path)
         os.remove(path + '/PWMs_of_dimers/' + dimers + '.motif')
         with open(Run_summary,'a') as log:
-            log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t'+str(Cooperative) + 
+            log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t'+str(" ") + 
             '\t'+str(Consensus_seq_dim)+'\t\t\t'
             +str(Consensus_seq_mon)+'\t\t\t'+ str(Consensus_seq_mon2) + 
             '\t\t\t' + str(np.round(Target_percent_mon,2))+'\t'

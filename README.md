@@ -134,7 +134,7 @@ We call the probability weight of the highest probable nucleotide at each positi
 3. long_motif_consensus.txt
 	- This is more of an intermediate file. It contains the found dimer sites. 
 
-*User can use their own PWM using the \[-p\] option. This motif must follow the [Homer motif format](http://homer.ucsd.edu/homer/motif/creatingCustomMotifs.html) and be at least 10 nt in length*
+*User can use their own PWM using the \[-p\] option. This motif must follow the [Homer motif format](http://homer.ucsd.edu/homer/motif/creatingCustomMotifs.html) and be at least 10 nt in length. This file must be in a Unix based format. *
 
 *We suggest four processors and at least 30 gb of RAM if you are running a Homer de novo motif analysis.* 
 

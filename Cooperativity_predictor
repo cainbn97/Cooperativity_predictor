@@ -97,9 +97,10 @@ while getopts "ceht:z:p:b:k:" opt; do
 		echo "	[-c] COSMO only run, requires Homer de novo motif files."
 		echo "	"
 		echo "	Additional options:"
-		echo "	[-z] Initial library cycle download link for normalization. If no download link"
-		echo "		 or file [-b] provided, program uses cycle 1 library for normalization."
-		echo "	[-b] Enter a fastq.gz file from the initial library of HT-SELEX. If no download link [-z]"
+		echo "	[-z] Initial library cycle download link for normalization. Program "
+		echo "	requires either [-b] or [-z]."
+		echo "	[-b] Enter a fastq.gz file from the initial library of HT-SELEX." 
+		echo "	Program requires either [-b] or [-z]."
 		echo "		 or file provided, program uses cycle 1 library for normalization"
 		echo "	[-t] Motif threshold for MOODS. Must be a value between 0 and 1. "
 		echo "		Default is 0.8."
@@ -151,22 +152,30 @@ then
 	Please select -h to run Homer de novo motif analysis or -p to enter your own motif file."
 	exit 1
 fi
-
+echo "$cflag";
 ## Check if configuration file was given for COSMO
-if [ "$cflag" = "true" ] && [ -e "$CONFIG" ]
+if [ "$cflag" = "true" ]
 then
-	echo "	Configuration file $CONFIG will be used for COSMO run"
-	COSMO_VENV_PATH=$( grep COSMO_VENV "$CONFIG" | cut -f 2 )
-	COSMO_VENV_PATH=$( dirname "$COSMO_VENV_PATH" )
-	COSMO_loc=$( grep COSMO_PATH "$CONFIG" | cut -f 2 )
-	
-else
-	echo "	A configuration file is required for COSMO run."; exit 1
+	if [ -e "$CONFIG" ]
+	then
+		echo "	Configuration file $CONFIG will be used for COSMO run"
+		COSMO_VENV_PATH=$( grep COSMO_VENV "$CONFIG" | cut -f 2 )
+		COSMO_VENV_PATH=$( dirname "$COSMO_VENV_PATH" )
+		COSMO_loc=$( grep COSMO_PATH "$CONFIG" | cut -f 2 )
+	else
+		echo "	A configuration file is required for COSMO run."; exit 1
+	fi
 fi
 
 if [ ! -z "${Zero_link+x}" ] && [ ! -z "${Fastq_bg+x}" ]
 then
 	echo "	Please enter either -b or -z. Only one initial library can be used."
+	exit 1
+fi
+
+if [ -z "${Zero_link+x}" ] && [ -z "${Fastq_bg+x}" ]
+then
+	echo "	Please enter a zero cycle download link or file. This pipeline does not work well without it."
 	exit 1
 fi
 
@@ -187,13 +196,13 @@ then
 	LINK1="$Target_link"
 	LINK2=$( echo $Target_link |\
 		cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle2}/"$( echo $Target_link |\
-		cut -d / -f 6 | cut -d _ -f 1,2,3 )"_2.fastq.gz"
+		cut -d / -f 6 | cut -d _ -f 1,2 )"_2.fastq.gz"
 	LINK3=$( echo $Target_link |\
 		cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle3}/"$( echo $Target_link |\
-		cut -d / -f 6 | cut -d _ -f 1,2,3 )"_3.fastq.gz"
+		cut -d / -f 6 | cut -d _ -f 1,2 )"_3.fastq.gz"
 	LINK4=$( echo $Target_link |\
 		cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle4}/"$( echo $Target_link |\
-		cut -d / -f 6 | cut -d _ -f 1,2,3 )"_4.fastq.gz"
+		cut -d / -f 6 | cut -d _ -f 1,2 )"_4.fastq.gz"
 	LINKS=("$LINK1" "$LINK2" "$LINK3" "$LINK4")
 fi
 
@@ -210,6 +219,7 @@ Rounds=(1 2 3 4)
 
 for Cycle in ${Rounds[@]}
 do
+	cd "$BASEDIR"/"$TF"
 	if [ -e Cycle"$Cycle"/*.fastq.gz ]
 	then
 		echo "	FASTQ file for cycle $Cycle exist..."
@@ -219,12 +229,19 @@ do
 		
 		## Make necessary directories and download files		
 		mkdir Cycle"$Cycle"; cd Cycle"$Cycle"; wget -nv ${LINKS[$(( $Cycle - 1 )) ]}
-		cd "$BASEDIR"/"$TF"
 		
-		file_check=$( ls -l *.fastq.gz 2>/dev/null | wc -l )
-		if [ "$file_check" != 0 ]
+		file_check=$( ls *.fastq.gz* 2>/dev/null | wc -l )
+
+		if [ "$file_check" -lt 1 ]
 		then
 			echo "	File failed to download..."; exit 1
+		fi
+		
+		if [ "$file_check" -gt 1 ]
+		then
+			echo "	There are multiple fastq.gz files in Cycle${Cycle}'s directory."
+			echo "	Please only have the fastq.gz file being used for analysis in this directory."
+			exit 1
 		fi
 		
 	fi
@@ -263,7 +280,7 @@ then
 	mkdir "$ZeroTag"; cd "$ZeroTag"
 	wget -nv "$Zero_link"
 	cd "$BASEDIR"/"$ZeroTag"
-	Fastq_bg=$( ls *.fastq.gz )
+	Fastq_bg=$( echo "${Zero_link##*/}" )
 	ZeroTag=$(find $(pwd) | grep ${Fastq_bg} )
 	if gzip --test "${Fastq_bg}"
 	then
@@ -276,23 +293,37 @@ then
 	fi
 	Zero_dir=$(dirname "$ZeroTag")
 	
-elif [ -z ${Zero_link+x} ] && [ -z ${Fastq_bg+x} ]
-then
-	## No existing file. Zero link was not given. Copy first cycle library to use as control
-	echo "No zero cycle given"
-	ZeroTag=$( echo ${Target_link} | tr '_', '\n' | grep .0N )
-	Fastq_bg="${Fastq_target[1]}"
-	Rounds=( 2 3 4 )
-	mkdir "$ZeroTag"
-	cp "$BASEDIR"/"$TF"/Cycle1/"${Fastq_target[1]}" "$ZeroTag"
-	ZeroTag=$(find $(pwd) | grep ${Fastq_bg} )
-	Zero_dir=$(dirname "$ZeroTag")
+	file_check=$( ls *"${Fastq_bg}"* 2>/dev/null | wc -l )
+
+	if [ "$file_check" -lt 1 ]
+	then
+		echo "	File failed to download..."; exit 1
+	fi
+	
+	if [ "$file_check" -gt 1 ]
+	then
+		echo "	There are multiple matching fastq.gz files in the initial library directory."
+		echo "	Please only have the fastq.gz file being used for analysis in this directory."
+		exit 1
+	fi
+	
+	
+# elif [ -z ${Zero_link+x} ] && [ -z ${Fastq_bg+x} ]
+# then
+	# ## No existing file. Zero link was not given. Copy first cycle library to use as control
+	# echo "No zero cycle given"
+	# ZeroTag=$( echo ${Target_link} | tr '_', '\n' | grep .0N )
+	# Fastq_bg="${Fastq_target[1]}"
+	# Rounds=( 2 3 4 )
+	# mkdir "$ZeroTag"
+	# cp "$BASEDIR"/"$TF"/Cycle1/"${Fastq_target[1]}" "$ZeroTag"
+	# ZeroTag=$(find $(pwd) | grep ${Fastq_bg} )
+	# Zero_dir=$(dirname "$ZeroTag")
 
 elif [ ! -z ${Fastq_bg+x} ]
 then
 	## If initial library was given
 	echo "	Zero cycle given. Checking file integrity..."
-	ZeroTag=$(find $(pwd) | grep ${Fastq_bg} )
 	if gzip --test "${Fastq_bg}"
 	then
 		echo "	${Fastq_bg} file intact."
@@ -302,13 +333,30 @@ then
 		rm -rf "$ZeroTag"
 		exit 1
 	fi	
+	ZeroTag=$(find $(pwd) | grep ${Fastq_bg} )
+	Zero_dir=$(dirname "$ZeroTag")
+	Fastq_bg=$( echo "${ZeroTag##*/}" )
+	
+	file_check=$( ls "$Zero_dir"/*"${Fastq_bg}"* 2>/dev/null | wc -l )
+
+	if [ "$file_check" -lt 1 ]
+	then
+		echo "	Could not find the file..."; exit 1
+	fi
+	
+	if [ "$file_check" -gt 1 ]
+	then
+		echo "	There are multiple fastq.gz files in Cycle${Cycle}'s directory."
+		echo "	Please only have the fastq.gz file being used for analysis in this directory."
+		exit 1
+	fi
 	
 fi
 
 
 
 ## Prep PWM directory
-if [ -d "$BASEDIR"/"$PWM_file" ]
+if [ ! -z ${PWM_file+x} ] && [ -d "$BASEDIR"/"$PWM_file" ]
 then
 	echo ""
 	cd "$BASEDIR"/"$TF"/Cycle4; mkdir -p "${TF}_4_homer_denovo_long/PWMs"
@@ -405,17 +453,38 @@ then
 
 
 		"
-
+		
+	echo 'HERE'
+	ls -R "$BASEDIR"/"$TF"/Cycle4/"${TF}_4_homer_denovo_long/"
+	echo 'here'
+	cd "$BASEDIR"/"$TF"/Cycle4/"${TF}_4_homer_denovo_long/"
+	if [ ! -d 'PWMs' ]
+	then
+		echo 'Here'
+		mkdir 'PWMs'; cd 'PWMs'
+		cp ../homerResults/motif[0-9].motif .
+	fi
 	
 	## Define spacer based on consensus sequence of top motif, generate COSMO motif files
+	
 	cd "$BASEDIR"/"$TF"
 	if [ ! -s long_motif_consensus.txt ]
 	then
-		if [ -d "$BASEDIR"/"$PWM_file" ]
+		if [ "$cflag" = "true" ]
 		then
-			python "$CODEDIR"/Consensus_sequence_search.py -cp
+			if [ -d "$BASEDIR"/"$PWM_file" ]
+			then
+				python "$CODEDIR"/Consensus_sequence_search.py -cp
+			else
+				python "$CODEDIR"/Consensus_sequence_search.py -c
+			fi
 		else
-			python "$CODEDIR"/Consensus_sequence_search.py -c
+			if [ -d "$BASEDIR"/"$PWM_file" ]
+			then
+				python "$CODEDIR"/Consensus_sequence_search.py -p
+			else
+				python "$CODEDIR"/Consensus_sequence_search.py
+			fi
 		fi
 		
 		count=0

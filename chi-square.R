@@ -23,7 +23,7 @@ dimers = list.files(pattern = '^dimer*')
 setwd("..")
 COSMO_output_file = paste(getwd(),'/',TF,'_COSMO_run_summary_wgrubbs.txt', sep = "")
 sink(COSMO_output_file, append = FALSE)
-cat(paste('TF','PWM','Dimer site','Chi-square', 'Chi-square post hoc no correction', 'Chi-square post hoc bonferroni correction', 'Grubbs test', 'Top spacer found', 'Z-test result (p)', sep = "\t"))
+cat(paste('TF','PWM','Dimer site','Chi-square', 'Chi-square post hoc no correction', 'Chi-square post hoc bonferroni correction', 'Grubbs test', 'Top spacer found', sep = "\t"))
 cat("\n")
 
 
@@ -103,11 +103,11 @@ for ( dimer in sort(dimers) )
 	# stats = read.table(paste('Cycle4/',TF,'_4_stats.txt',sep = ""), sep = "\t", skip = 1, header = TRUE)
 	# spac_orient_p = paste('motif1.jpwm|motif2.jpwm|FF|',spacer,sep = "")
 	# COSMO_zstats = subset(stats, ( stats$TF1.TF2..F.R..D == spac_orient_p))[2:7]
-	p_spac = 'N/A' #subset(stats, ( stats$TF1.TF2..F.R..D == spac_orient_p))[8]
+	# p_spac = 'N/A' #subset(stats, ( stats$TF1.TF2..F.R..D == spac_orient_p))[8]
 
 	## Write data to file
 	sink(COSMO_output_file, append = TRUE)
-	cat(paste(TF, dimer_name, long_consensus, round(chi_tot_pvalue,4) , chi_spac, chi_spac_bon, p_grubbs, top_spac, p_spac, sep = "\t"))
+	cat(paste(TF, dimer_name, long_consensus, round(chi_tot_pvalue,4) , chi_spac, chi_spac_bon, p_grubbs, top_spac, sep = "\t"))
 	cat("\t")
 	# cat(unlist(COSMO_zstats),sep = "\t")
 	cat("\n")
