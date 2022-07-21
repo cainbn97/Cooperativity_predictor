@@ -45,13 +45,13 @@ To acquire the repository:
 git clone --recursive https://github.com/cainbn97/Cooperativity_predictor.git
 ```
 
-This program is a wrapper around the previously mentioned packages. If you would like to check if these dependencies are functioning, you can run [Dependency_check](`Dependency_check`) to check the installation of python, R, Homer, and COSMO, as well as the required python and R packages. The program expects a COSMO virtual environment given the current deprecated state of the COSMO dependency, MOODs.
+This program is a wrapper around the previously mentioned packages. If you would like to check if these dependencies are functioning, you can run [Dependency_check](Dependency_check) to check the installation of python, R, Homer, and COSMO, as well as the required python and R packages. The program expects a COSMO virtual environment given the current deprecated state of the COSMO dependency, MOODs.
 
 ```bash
 ./Dependency_check -k CONFIG.txt
 ```
 
-A CONFIG file is required to run COSMO to ensure the virtual environment is properly found and sourced. An example of a [CONFIG.txt](`CONFIG.txt`) is included and shown below. COSMO_VENV is the absolute path to the location of the executable bin folder of the virtual environment and COSMO_PATH is the absolute path to the location of the COSMO package/scripts.
+A CONFIG file is required to run COSMO to ensure the virtual environment is properly found and sourced. An example of a [CONFIG.txt](CONFIG.txt) is included and shown below. COSMO_VENV is the absolute path to the location of the executable bin folder of the virtual environment and COSMO_PATH is the absolute path to the location of the COSMO package/scripts.
 
 ```
 COSMO_VENV	/venv/bin
