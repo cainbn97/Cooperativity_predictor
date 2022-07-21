@@ -1,6 +1,6 @@
 # Predict homeodomain transcription factor cooperativity with HT-SELEX
 
-This program predicts cooperativity of transcription factors using HT-SELEX by both assessing dimer versus individual half-site enrichment as well as spacer preference as done in *Link paper here!*.
+This program predicts cooperativity of transcription factors using HT-SELEX by both assessing dimer versus individual 4mer enrichment as well as spacer preference as done in *Link paper here!*.
 
 We suggest running both the enrichment analysis and COSMO analysis as they test different aspects of cooperativity and require the transcription factor to pass all criteria.
 
@@ -42,7 +42,7 @@ We suggest running both the enrichment analysis and COSMO analysis as they test 
 To acquire the repository:
 
 ```bash
-git clone --recursive https://github.com/cainbn97/SELEX_analysis.git
+git clone --recursive https://github.com/cainbn97/Cooperativity_predictor.git
 ```
 
 This program is a wrapper around the previously mentioned packages. If you would like to check if these dependencies are functioning, you can run [Dependency_check](`Dependency_check`) to check the installation of python, R, Homer, and COSMO, as well as the required python and R packages. The program expects a COSMO virtual environment given the current deprecated state of the COSMO dependency, MOODs.
