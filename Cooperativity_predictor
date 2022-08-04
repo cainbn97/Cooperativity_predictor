@@ -454,13 +454,9 @@ then
 
 		"
 		
-	echo 'HERE'
-	ls -R "$BASEDIR"/"$TF"/Cycle4/"${TF}_4_homer_denovo_long/"
-	echo 'here'
 	cd "$BASEDIR"/"$TF"/Cycle4/"${TF}_4_homer_denovo_long/"
 	if [ ! -d 'PWMs' ]
 	then
-		echo 'Here'
 		mkdir 'PWMs'; cd 'PWMs'
 		cp ../homerResults/motif[0-9].motif .
 	fi
@@ -472,14 +468,14 @@ then
 	then
 		if [ "$cflag" = "true" ]
 		then
-			if [ -d "$BASEDIR"/"$PWM_file" ]
+			if [ ! -z ${PWM_file+x} ] && [ -d "$BASEDIR"/"$PWM_file" ]
 			then
 				python "$CODEDIR"/Consensus_sequence_search.py -cp
 			else
 				python "$CODEDIR"/Consensus_sequence_search.py -c
 			fi
 		else
-			if [ -d "$BASEDIR"/"$PWM_file" ]
+			if [ ! -z ${PWM_file+x} ] && [ -d "$BASEDIR"/"$PWM_file" ]
 			then
 				python "$CODEDIR"/Consensus_sequence_search.py -p
 			else

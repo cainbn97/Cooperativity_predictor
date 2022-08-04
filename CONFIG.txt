@@ -1,2 +1,2 @@
-COSMO_VENV	/cosmo/venv/bin
-COSMO_PATH	/cosmo
+COSMO_VENV	/users/cainu5/SELEX_analysis/COSMO_test/venv/bin
+COSMO_PATH	/users/cainu5/SELEX_analysis/COSMO/cosmo

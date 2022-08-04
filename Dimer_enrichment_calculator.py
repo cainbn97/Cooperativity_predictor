@@ -216,10 +216,10 @@ for dimers in sorted(glob.glob(dimer_motifs), key=str.casefold):
     if len(Target_percent_dim) == 0:
         notes.append('Dimer did not appear in any of the cycles.')
         print('\tDimer did not appear in any of the cycles.')
-        # export_path = 'top_dimer_kmer_motifs_' + dimers
-        # os.remove(os.path.join(export_path, 'motif1.jpwm'))
-        # os.remove(os.path.join(export_path, 'motif2.jpwm'))
-        # os.rmdir(export_path)
+        export_path = 'top_dimer_kmer_motifs_' + dimers
+        os.remove(os.path.join(export_path, 'motif1.jpwm'))
+        os.remove(os.path.join(export_path, 'motif2.jpwm'))
+        os.rmdir(export_path)
         os.remove(path + '/PWMs_of_dimers/' + dimers + '.motif')
         with open(Run_summary,'a') as log:
             log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t'+str(" ") + 
@@ -231,23 +231,23 @@ for dimers in sorted(glob.glob(dimer_motifs), key=str.casefold):
         continue 
     
     
-    if Target_percent_dim[-1] < 5:
-        Cooperative = 0
-        notes.append('Dimer motif at Cycle 4 had an enrichment of <5%.')
-        print('\tDimer prevalence less than 5% - exiting')
+    # if Target_percent_dim[-1] < 5:
+        # Cooperative = 0
+        # notes.append('Dimer motif at Cycle 4 had an enrichment of <5%.')
+        # print('\tDimer prevalence less than 5% - exiting')
         # export_path = 'top_dimer_kmer_motifs_' + dimers
         # os.remove(os.path.join(export_path, 'motif1.jpwm'))
         # os.remove(os.path.join(export_path, 'motif2.jpwm'))
         # os.rmdir(export_path)
-        os.remove(path + '/PWMs_of_dimers/' + dimers + '.motif')
-        with open(Run_summary,'a') as log:
-            log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t'+str(" ") + 
-            '\t'+str(Consensus_seq_dim)+'\t\t\t'
-            +str(Consensus_seq_mon)+'\t\t\t'+ str(Consensus_seq_mon2) + 
-            '\t\t\t' + str(np.round(Target_percent_mon,2))+'\t'
-            +str(np.round(Target_percent_mon2,2)) + '\t'
-            +str(np.round(Target_percent_dim,2))+'\t\t\t'+str(notes)+'\n')
-        continue 
+        # os.remove(path + '/PWMs_of_dimers/' + dimers + '.motif')
+        # with open(Run_summary,'a') as log:
+            # log.write(TF+'\t'+ str(os.path.basename(dimers)) + '\t'+ str(dimer_site)+'\t'+str(" ") + 
+            # '\t'+str(Consensus_seq_dim)+'\t\t\t'
+            # +str(Consensus_seq_mon)+'\t\t\t'+ str(Consensus_seq_mon2) + 
+            # '\t\t\t' + str(np.round(Target_percent_mon,2))+'\t'
+            # +str(np.round(Target_percent_mon2,2)) + '\t'
+            # +str(np.round(Target_percent_dim,2))+'\t\t\t'+str(notes)+'\n')
+        # continue 
         
         
             

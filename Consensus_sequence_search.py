@@ -41,12 +41,13 @@ if os.path.isfile(path + '/dimer_description_check.txt') == True:
 if os.path.isfile(path + '/Cycle4/' + TF +  '_4_homer_denovo_long/D_site_motif.txt') == True:
     os.remove(path + '/Cycle4/' + TF + '_4_homer_denovo_long/D_site_motif.txt')
 
-COSMO_output = path + '/top_dimer_kmer_motifs_dimer_[0-9]/'
-for export_path_COSMO in sorted(glob.glob(COSMO_output)):
-    if os.path.isdir(export_path_COSMO) == True:
-        os.remove(export_path_COSMO + 'motif1.jpwm')
-        os.remove(export_path_COSMO + 'motif2.jpwm')
-        os.rmdir(export_path_COSMO)
+if ( COSMO == True ):
+    COSMO_output = path + '/top_dimer_kmer_motifs_dimer_[0-9]/'
+    for export_path_COSMO in sorted(glob.glob(COSMO_output)):
+        if os.path.isdir(export_path_COSMO) == True:
+            os.remove(export_path_COSMO + 'motif1.jpwm')
+            os.remove(export_path_COSMO + 'motif2.jpwm')
+            os.rmdir(export_path_COSMO)
 
 ## Prepare log file
 with open(path + '/dimer_description_check.txt', 'a') as log :
@@ -80,6 +81,7 @@ for de_novo_motifs in sorted(os.listdir(de_novo_motif_folder), key=str.casefold)
                 motif_final.append(motif_row_final)          
             c = c + 1      
     motif = pd.DataFrame(motif_final, columns = ['A','C','G','T'], index = np.arange(1,c))
+    motif = motif.div(motif.sum(axis = 1), axis = 0)
 
     ## Search top kmers
     ## Score motifs based on individual nucleotide selection of site
@@ -120,8 +122,8 @@ for de_novo_motifs in sorted(os.listdir(de_novo_motif_folder), key=str.casefold)
     found = False
     while found == False and Found_sites_scores_df.empty == False:
         top_site2 = Found_sites_scores_df.loc[Found_sites_scores_df.loc[:,'Score'].idxmax()]
-        if ( top_site2['End'] in np.arange(top_site['Start']-1, top_site['End']+2) ) \
-            or ( top_site2['Start'] in np.arange(top_site['Start']-1, top_site['End']+2)):
+        if ( top_site2['End'] in np.arange(top_site['Start']-2, top_site['End']+3) ) \
+            or ( top_site2['Start'] in np.arange(top_site['Start']-2, top_site['End']+3)):
             ## Drop overlap match and repeat
             Index = Found_sites_scores_df.loc[:,'Score'].idxmax()
             Found_sites_scores_df = Found_sites_scores_df.drop(Index)
@@ -154,53 +156,53 @@ for de_novo_motifs in sorted(os.listdir(de_novo_motif_folder), key=str.casefold)
         Target = 'N/A'
         Bg = 'N/A'
         
-    if Ratio >= Top2SpacThres and top_site['Score'] >= 0.6 and top_site2['Score'] >= 0.6 :
-        D_site_found = True
-        export_path = path + '/Cycle4/' + TF + '_4_homer_denovo_long/D_site_motif.txt'
-        with open(export_path, 'a') as log:
-            log.write(de_novo_motifs)
-            log.write('\n')
-            
-        ## Define consensus sequence        
-        if top_site['Start'] < top_site2['Start']:
-            ## top site is first site
-            Spacer = top_site2['Start'] - top_site['End'] - 1
-            dimer_site = top_site['Seq'] + str(Spacer) + 'N' + top_site2['Seq']
-            motif1 = top_site
-            motif2 = top_site2
-        elif top_site['Start'] > top_site2['Start']:
-            ## top2 site is first site
-            Spacer = top_site['Start'] - top_site2['End'] - 1
-            dimer_site = top_site2['Seq'] + str(Spacer) + 'N' + top_site['Seq']
-            motif1 = top_site2
-            motif2 = top_site
-            
-            
-        export_path = path + '/long_motif_consensus.txt'
-        print(top_site); print(top_site2)
-        with open(export_path,'a') as log:
-            log.write(dimer_site)
-            log.write('\n')
-
-        # Generate motif files for COSMO        
-        if ( COSMO == True ):
-            ## Index top sites from motif file
-            motif1 = motif.loc[motif1['Start']:motif1['End']]*100
-            motif1 = motif1.transpose()
-
-            motif2 = motif.loc[motif2['Start']:motif2['End']]*100
-            motif2 = motif2.transpose()
-
-            export_path_COSMO = path + '/top_dimer_kmer_motifs_dimer_' + de_novo_motifs.split('.')[0] + '/'
-            os.mkdir(export_path_COSMO)
-            with open(export_path_COSMO + 'motif1.jpwm','w') as log:
-                log.write(motif1.to_string(index = False, header = False))
-            with open(export_path_COSMO + 'motif2.jpwm','w') as log:
-                log.write(motif2.to_string(index = False, header = False))
+    # if Ratio >= Top2SpacThres and top_site['Score'] >= 0.6 and top_site2['Score'] >= 0.6 :
+    D_site_found = True
+    export_path = path + '/Cycle4/' + TF + '_4_homer_denovo_long/D_site_motif.txt'
+    with open(export_path, 'a') as log:
+        log.write(de_novo_motifs)
+        log.write('\n')
+        
+    ## Define consensus sequence        
+    if top_site['Start'] < top_site2['Start']:
+        ## top site is first site
+        Spacer = top_site2['Start'] - top_site['End'] - 1
+        dimer_site = top_site['Seq'] + str(Spacer) + 'N' + top_site2['Seq']
+        motif1 = top_site
+        motif2 = top_site2
+    elif top_site['Start'] > top_site2['Start']:
+        ## top2 site is first site
+        Spacer = top_site['Start'] - top_site2['End'] - 1
+        dimer_site = top_site2['Seq'] + str(Spacer) + 'N' + top_site['Seq']
+        motif1 = top_site2
+        motif2 = top_site
     
-    else:
-        dimer_site = 'N/A'
     
+    export_path = path + '/long_motif_consensus.txt'
+    print(top_site); print(top_site2)
+    with open(export_path,'a') as log:
+        log.write(dimer_site)
+        log.write('\n')
+
+    # Generate motif files for COSMO        
+    if ( COSMO == True ):
+        ## Index top sites from motif file
+        motif1 = motif.loc[motif1['Start']:motif1['End']]*100
+        motif1 = motif1.transpose()
+
+        motif2 = motif.loc[motif2['Start']:motif2['End']]*100
+        motif2 = motif2.transpose()
+
+        export_path_COSMO = path + '/top_dimer_kmer_motifs_dimer_' + de_novo_motifs.split('.')[0] + '/'
+        os.mkdir(export_path_COSMO)
+        with open(export_path_COSMO + 'motif1.jpwm','w') as log:
+            log.write(motif1.to_string(index = False, header = False))
+        with open(export_path_COSMO + 'motif2.jpwm','w') as log:
+            log.write(motif2.to_string(index = False, header = False))
+
+    # else:
+        # dimer_site = 'N/A'
+        
     with open(path + '/dimer_description_check.txt', 'a') as log :
         log.write(TF+ '\t' + de_novo_motifs + '\t' + dimer_site + '\t' + str(round(Top_sites_score/Other_scores,3)) + '\t' + str(round(Top_sites_score,3)) + '\t'
         + str(round(Other_scores,3)) + '\t' + str(round(top_site['Score'],3)) + '\t' + str(top_site2['Score']) + '\t' + logP + '\t' + Target + '\t' + Bg + '\n')
