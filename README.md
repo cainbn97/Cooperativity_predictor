@@ -15,7 +15,7 @@ We suggest running both the enrichment analysis and COSMO analysis as they test 
 | 152         | $totalNumTargets = floor($numTargets/($percentTargets\*0.01)+0.5);           | $totalNumTargets = floor($numTargets/($percentTargets\*0.01+0.0005));
 | 153         | $totalNumBackground = floor($numBackground/($percentBackground\*0.01)+0.5);  | $totalNumBackground = floor($numBackground/($percentBackground\*0.01+0.0005));
 
-2. COSMO (will need to link once public)
+2. [COSMO \(Narasimhan *et al*, 2015\)](https://elifesciences.org/articles/06967)
 	- Python 2.7
 		- [MOODS (1.0.2.1)](https://www.cs.helsinki.fi/group/pssmfind/)
 		- numpy (1.16.6)
