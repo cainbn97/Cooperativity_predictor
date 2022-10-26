@@ -1,8 +1,8 @@
 # Predict homeodomain transcription factor cooperativity with HT-SELEX
 
-This program predicts cooperativity of transcription factors using HT-SELEX by both assessing dimer versus individual 4mer enrichment as well as spacer preference as done in *Link paper here!*.
+This program predicts cooperativity of transcription factors using HT-SELEX by both assessing dimer versus individual 4mer enrichment as well as spacer preference.
 
-We suggest running both the enrichment analysis and COSMO analysis as they test different aspects of cooperativity and require the transcription factor to pass all criteria.
+[![DOI](https://zenodo.org/badge/306970871.svg)](https://zenodo.org/badge/latestdoi/306970871)
 
 ## Prerequisites
 
@@ -118,6 +118,8 @@ Additional options:
 
 ## Program outputs
 
+We suggest running both the enrichment analysis and COSMO analysis as they test different aspects of cooperativity and then require the transcription factor to pass all criteria. 
+
 ### Dimer search
 
 We call the probability weight of the highest probable nucleotide at each position the nucleotide impact. The 2 nonoverlapping 4-mers with the highest average nucleotide impact will be selected as half sites. 4-mers are used in this analysis as the conserved residues in the HD directly mediate contact with the core ‘TAAT’ 4-mer.  If the average nucleotide impact of the two half sites is 1.6 times greater than the nucleotide impacts of the surrounding flanking regions and spacer, and the average nucleotide impact for each of the two half sites is greater than 0.6, then the motif is considered a dimer site.
@@ -157,7 +159,6 @@ ANALYSIS
 ```
 
 *Program will call a motif a dimer site if nucleotide impact for each site is greater than 0.6 and the site:non-site ratio is greater than 1.6.*
-
 
 ### Enrichment analysis
 
