@@ -68,8 +68,8 @@ fi
 echo ""; echo ""; echo "" 
 ## Check Homer
 echo "Checking Homer installation..."; echo ""; echo ""; echo ""
-findMotifs.pl || { echo ""; echo ""; echo "Count not find a working Homer installation."; echo ""; }
-
+findMotifs.pl && echo "Homer installation found" || "Count not find a working Homer installation."
+echo ""; echo ""; echo "";
 
 ## Check COSMO
 echo "Sourcing COSMO virtual environment..."; echo ""
@@ -81,11 +81,11 @@ then
 	COSMO_loc=$( grep COSMO_PATH "$CONFIG" | cut -f 2 )
 	
 	echo "Checking COSMO installation..."; echo ""
-	PYTHONPATH="$COSMO_VENV_PATH"/bin
 	source "$COSMO_VENV_PATH"/bin/activate
-	"$COSMO_loc"/cosmo_v1.py --fasta
+	PYTHONPATH="$COSMO_VENV_PATH"/bin
+	python "$COSMO_loc"/cosmo.py -p "$COSMO_loc"/examples/jpwm -fa "$COSMO_loc"/examples/example.40k.fa && \
+		echo "COSMO installation found" || echo "COSMO installation not found or not working."
 	
-	echo ""; echo "^^^Did you get the usage statement with 'argument -fa/--fasta: expected one argument'?"
 
 	echo ""; echo ""
 	deactivate

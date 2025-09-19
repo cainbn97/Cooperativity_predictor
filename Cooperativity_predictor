@@ -196,13 +196,13 @@ then
 	LINK1="$Target_link"
 	LINK2=$( echo $Target_link |\
 		cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle2}/"$( echo $Target_link |\
-		cut -d / -f 6 | cut -d _ -f 1,2 )"_2.fastq.gz"
+		cut -d / -f 6 | cut -d _ -f 1,2,3 )"_2.fastq.gz"
 	LINK3=$( echo $Target_link |\
 		cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle3}/"$( echo $Target_link |\
-		cut -d / -f 6 | cut -d _ -f 1,2 )"_3.fastq.gz"
+		cut -d / -f 6 | cut -d _ -f 1,2,3 )"_3.fastq.gz"
 	LINK4=$( echo $Target_link |\
 		cut -d / -f 1,2,3,4 )"/ERR${SampAcc_Cycle4}/"$( echo $Target_link |\
-		cut -d / -f 6 | cut -d _ -f 1,2 )"_4.fastq.gz"
+		cut -d / -f 6 | cut -d _ -f 1,2,3 )"_4.fastq.gz"
 	LINKS=("$LINK1" "$LINK2" "$LINK3" "$LINK4")
 fi
 
@@ -707,7 +707,7 @@ then
 					> "${TF}_0.fa"
 				rm "${TF}_0.fastq"
 							
-				"$COSMO_loc"/cosmo_v1.py --fasta "${TF}_0.fa" \
+				"$COSMO_loc"/cosmo.py --fasta "${TF}_0.fa" \
 				--threshold "$THRES" --distance "$DIST" -p "$BASEDIR"/"$TF"/"$dmotifs"/
 				
 				if [ ! -d "$BASEDIR"/"$TF"/Cycle0 ]
@@ -732,7 +732,7 @@ then
 				rm "${TF}_${Cycle}.fastq"
 				
 				## Run foreground scan
-				"$COSMO_loc"/cosmo_v1.py --fasta \
+				"$COSMO_loc"/cosmo.py --fasta \
 					"$BASEDIR"/"$TF"/Cycle"$Cycle"/"${TF}_${Cycle}.fa" \
 					--threshold "$THRES" --distance "$DIST" -p ../"$dmotifs"/
 					

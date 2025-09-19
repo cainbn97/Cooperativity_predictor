@@ -15,7 +15,7 @@ This program predicts cooperativity of transcription factors using HT-SELEX by b
 | 152         | $totalNumTargets = floor($numTargets/($percentTargets\*0.01)+0.5);           | $totalNumTargets = floor($numTargets/($percentTargets\*0.01+0.0005));
 | 153         | $totalNumBackground = floor($numBackground/($percentBackground\*0.01)+0.5);  | $totalNumBackground = floor($numBackground/($percentBackground\*0.01+0.0005));
 
-2. [COSMO \(Narasimhan *et al*, 2015\)](https://elifesciences.org/articles/06967)
+2. [COSMO](https://github.com/weirauchlab/cosmo)
 	- Python 2.7
 		- [MOODS (1.0.2.1)](https://www.cs.helsinki.fi/group/pssmfind/)
 		- numpy (1.16.6)

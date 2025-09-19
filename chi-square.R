@@ -6,7 +6,7 @@
 ##
 ## 06/10/21
 
-library("chisq.posthoc.test", lib.loc = "/users/cainu5/Rpackages")
+library("chisq.posthoc.test")
 library("readr")
 library("outliers")
 

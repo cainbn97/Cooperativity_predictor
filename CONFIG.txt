@@ -1,2 +1,2 @@
-COSMO_VENV	/cosmo/venv/bin
-COSMO_PATH	/cosmo
+COSMO_VENV	/venv/bin
+COSMO_PATH	/COSMO
